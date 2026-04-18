@@ -1,0 +1,2676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+  ================================================================
+  MediSecond — AI-Driven Medical Second Opinion Platform
+  ================================================================
+  HOW TO RUN:
+    Just open this file in any modern browser (Chrome, Edge,
+    Firefox, Safari). No server, no npm, no build step needed.
+
+  LIBRARIES LOADED FROM CDN:
+    • React 18         — UI rendering
+    • ReactDOM 18      — mounting the app into the page
+    • Babel Standalone — compiles JSX in the browser at runtime
+
+  ALL ICONS are hand-coded as inline SVG components at the top
+  of the script block, so the app works 100% offline too
+  (apart from the Google Fonts import below).
+
+  DEMO ACCOUNTS (pre-filled in the login modal):
+    Admin   → admin@medisecond.ai   / Admin@123
+    Doctor  → dr.wilson@medisecond.ai / Doctor@123
+    Patient → patient@medisecond.ai  / Patient@123
+  ================================================================
+  -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediSecond — Medical Second Opinion Platform</title>
+
+  <!-- Google Fonts — DM Serif Display for headings, DM Sans for body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Global reset — I zero out browser defaults for consistency */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: #F0F4F8; }
+
+    /* Custom scrollbar so the sidebar looks clean */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+
+    /* Smooth focus outlines for accessibility */
+    :focus-visible { outline: 2px solid #0B7A75; outline-offset: 2px; }
+
+    /* Native <select> and <input> inherit the font properly */
+    input, select, textarea, button { font-family: 'DM Sans', sans-serif; }
+
+    /* Prevent horizontal overflow on mobile */
+    body { overflow-x: hidden; }
+  </style>
+</head>
+<body>
+  <!-- React mounts here -->
+  <div id="root"></div>
+
+  <!-- React 18 UMD build -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel Standalone — transforms JSX at runtime so we can write .jsx syntax here -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!--
+  ================================================================
+  APPLICATION CODE
+  type="text/babel" tells Babel to compile this block before
+  the browser executes it. This lets us use JSX and modern JS
+  without any build step.
+  ================================================================
+  -->
+  <script type="text/babel">
+
+    // ── Destructure React hooks we need ──────────────────────
+    // I pull these out of the global React object so I can use
+    // them like regular imports throughout the code.
+    const { useState, useRef, useEffect } = React;
+
+    // ============================================================
+    // SECTION 0 — INLINE SVG ICON SYSTEM
+    // I define every icon used in the app as a tiny React
+    // component returning raw SVG. This way the file has zero
+    // external icon dependencies and works fully offline.
+    // All icons follow the Lucide icon style:
+    //   • 24×24 viewport
+    //   • stroke-based, fill="none"
+    //   • strokeLinecap / strokeLinejoin = "round"
+    // ============================================================
+
+    /** Base wrapper so every icon shares the same SVG shell */
+    const Ico = ({ size=18, color="currentColor", fill="none", style={}, children }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size}
+        viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round"
+        style={{ flexShrink:0, display:"inline-block", ...style }}>
+        {children}
+      </svg>
+    );
+
+    /* Each icon below is a named component matching the Lucide API */
+
+    const Shield = p => <Ico {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Ico>;
+    const Lock   = p => <Ico {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Ico>;
+    const Globe  = p => <Ico {...p}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Ico>;
+    const Zap    = p => <Ico {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Ico>;
+    const Award  = p => <Ico {...p}><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></Ico>;
+    const BookOpen = p => <Ico {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Ico>;
+    const Users  = p => <Ico {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Ico>;
+    const User   = p => <Ico {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Ico>;
+    const FileText = p => <Ico {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></Ico>;
+    const MessageCircle = p => <Ico {...p}><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></Ico>;
+    const Star   = ({fill="none",...p}) => <Ico {...p} fill={fill}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Ico>;
+    const Upload = p => <Ico {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Ico>;
+    const X      = p => <Ico {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Ico>;
+    const Send   = p => <Ico {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Ico>;
+    const Edit2  = p => <Ico {...p}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></Ico>;
+    const Trash2 = p => <Ico {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Ico>;
+    const Eye    = p => <Ico {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></Ico>;
+    const CheckCircle = p => <Ico {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></Ico>;
+    const ChevronRight = p => <Ico {...p}><path d="m9 18 6-6-6-6"/></Ico>;
+    const ArrowRight   = p => <Ico {...p}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></Ico>;
+    const Clock  = p => <Ico {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Ico>;
+    const Bell   = p => <Ico {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></Ico>;
+    const LogOut = p => <Ico {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></Ico>;
+    const Plus   = p => <Ico {...p}><path d="M5 12h14"/><path d="M12 5v14"/></Ico>;
+    const Search = p => <Ico {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Ico>;
+    const Activity = p => <Ico {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></Ico>;
+    const AlertCircle = p => <Ico {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></Ico>;
+    const Stethoscope = p => <Ico {...p}><path d="M4.5 4.5a7 7 0 0 0 0 9.9l7.5 7.5 7.5-7.5a7 7 0 0 0-9.9-9.9z"/><circle cx="12" cy="18" r="2"/><path d="M19 6.5v2a5 5 0 0 1-5 5"/></Ico>;
+    const Paperclip = p => <Ico {...p}><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></Ico>;
+
+    // ============================================================
+    // SECTION 1 — THEME CONSTANTS
+    // I keep every colour in one object (T) so I can reskin the
+    // entire platform by changing values here only.
+    // ============================================================
+    const T = {
+      navy:      "#0F2D52",  // brand navy — main headers and buttons
+      teal:      "#0B7A75",  // brand teal — accents and links
+      tealLight: "#E6F4F3",  // soft teal wash for backgrounds
+      amber:     "#D97706",  // warm amber — CTA and badge highlights
+      amberBg:   "#FEF3C7",  // amber background wash
+      green:     "#065F46",  // success state text
+      greenBg:   "#D1FAE5",  // success state background
+      red:       "#991B1B",  // error / danger text
+      redBg:     "#FEE2E2",  // error / danger background
+      bg:        "#F0F4F8",  // overall page background
+      surface:   "#FFFFFF",  // card and modal surfaces
+      border:    "#CBD5E1",  // subtle border colour
+      text:      "#0F172A",  // primary body text
+      muted:     "#64748B",  // secondary / muted text
+      hint:      "#94A3B8",  // placeholder / hint text
+      gradient:  "linear-gradient(135deg, #0F2D52 0%, #0B7A75 100%)",
+    };
+
+    // ============================================================
+    // SECTION 2 — SEED DATA
+    // I pre-populate realistic accounts and sample cases so that
+    // anyone evaluating the system can immediately explore every
+    // role without filling in data from scratch.
+    // ============================================================
+
+    /** Five pre-built accounts — one admin, two doctors, two patients */
+    const SEED_USERS = [
+      {
+        id: "u-admin", name: "Dr. Sarah Chen",
+        email: "admin@medisecond.ai", password: "Admin@123",
+        role: "admin", avatar: "SC",
+        specialty: "Platform Administrator", hospital: "MediSecond HQ",
+        joinDate: "2023-01-10",
+        bio: "I oversee clinical quality and platform integrity at MediSecond.",
+      },
+      {
+        id: "u-doc1", name: "Dr. James Wilson",
+        email: "dr.wilson@medisecond.ai", password: "Doctor@123",
+        role: "doctor", avatar: "JW",
+        specialty: "Cardiology", hospital: "City Heart Institute",
+        joinDate: "2023-03-05",
+        bio: "Interventional cardiologist with 18 years of clinical experience.",
+      },
+      {
+        id: "u-doc2", name: "Dr. Priya Patel",
+        email: "dr.patel@medisecond.ai", password: "Doctor@123",
+        role: "doctor", avatar: "PP",
+        specialty: "Neurology", hospital: "Dhaka Medical College",
+        joinDate: "2023-04-20",
+        bio: "Specialising in stroke rehabilitation and epilepsy management.",
+      },
+      {
+        id: "u-pat1", name: "Mohammed Al-Rashid",
+        email: "patient@medisecond.ai", password: "Patient@123",
+        role: "patient", avatar: "MA",
+        joinDate: "2023-07-14",
+        bio: "Looking for clarity on my recent cardiac diagnosis.",
+      },
+      {
+        id: "u-pat2", name: "Lisa Thompson",
+        email: "lisa@medisecond.ai", password: "Patient@123",
+        role: "patient", avatar: "LT",
+        joinDate: "2023-09-02",
+        bio: "Seeking a second opinion after my recent MRI results.",
+      },
+    ];
+
+    /** Three realistic case posts with specialist comments attached */
+    const SEED_POSTS = [
+      {
+        id: "p-1", authorId: "u-pat1", authorName: "Mohammed Al-Rashid",
+        title: "Need a Second Opinion on Mild Aortic Stenosis Diagnosis",
+        content: "I was recently told by my local cardiologist that I have mild aortic stenosis. My echocardiogram showed a valve area of 1.8 cm² with a mean gradient of 18 mmHg. I am 52 years old, mildly symptomatic (occasional breathlessness during stair climbing), and otherwise healthy. My doctor suggested a watch-and-wait approach with annual echo follow-ups. I want to know whether this plan is appropriate or if I should be considering intervention sooner.",
+        category: "Cardiology", status: "responded", priority: "medium",
+        createdAt: "2024-02-10T09:15:00", attachments: [],
+        likes: ["u-doc1","u-admin"], dislikes: [],
+        comments: [
+          {
+            id: "c-1", authorId: "u-doc1", authorName: "Dr. James Wilson",
+            role: "doctor", specialty: "Cardiology",
+            content: "Thank you for sharing your case details. Your echocardiographic findings are indeed consistent with mild aortic stenosis — a valve area above 1.5 cm² typically falls into this category. The watchful-waiting strategy your cardiologist proposed is well-aligned with current ACC/AHA guidelines for mild, minimally symptomatic AS. I would recommend sticking with annual echocardiography and a cardiology review every six to twelve months. If your symptoms progress — particularly exertional chest pain, syncope, or significant dyspnoea — please seek evaluation promptly, as those are indicators for considering intervention. Maintain a heart-healthy lifestyle in the meantime.",
+            createdAt: "2024-02-10T14:30:00",
+            likes: ["u-pat1","u-admin"], dislikes: [],
+            replies: [
+              {
+                id: "r-1", authorId: "u-pat1", authorName: "Mohammed Al-Rashid",
+                role: "patient", content: "Thank you Dr. Wilson! Should I be worried about exercising? I used to jog regularly.",
+                createdAt: "2024-02-10T16:00:00", likes: [], dislikes: [],
+              }
+            ],
+          },
+          {
+            id: "c-2", authorId: "u-admin", authorName: "Dr. Sarah Chen",
+            role: "admin", specialty: "Platform Administrator",
+            content: "I have reviewed this case from a platform quality standpoint. Dr. Wilson's guidance is clinically sound. If you have any uploaded reports or imaging files you would like our panel to review, please attach them to this post.",
+            createdAt: "2024-02-11T08:00:00",
+            likes: ["u-pat1"], dislikes: [], replies: [],
+          },
+        ],
+      },
+      {
+        id: "p-2", authorId: "u-pat2", authorName: "Lisa Thompson",
+        title: "Uncertain About MRI Finding — Possible MS Diagnosis",
+        content: "My neurologist showed me an MRI of my brain that revealed two small white-matter lesions. She mentioned the possibility of early multiple sclerosis, but said the imaging alone is not conclusive. I have had two episodes of numbness in my left arm over the past year, each lasting about a week. I am 34 years old and otherwise in good health. A lumbar puncture has been suggested to check for oligoclonal bands. I am anxious and would really appreciate a second opinion before agreeing to the procedure.",
+        category: "Neurology", status: "pending", priority: "high",
+        createdAt: "2024-02-14T16:45:00", attachments: [],
+        likes: ["u-doc2"], dislikes: [],
+        comments: [
+          {
+            id: "c-3", authorId: "u-doc2", authorName: "Dr. Priya Patel",
+            role: "doctor", specialty: "Neurology",
+            content: "I understand how distressing this uncertainty must feel. Your clinical picture — two distinct episodes of sensory symptoms separated in time, combined with two white-matter lesions on MRI — does raise a genuine concern about demyelinating disease, including early MS. However, a diagnosis requires evidence of dissemination in both time and space, and there are other conditions that can mimic these findings. The lumbar puncture your neurologist has recommended is a reasonable next step; oligoclonal bands are present in roughly 85–95% of MS patients and help distinguish it from conditions like small-vessel ischaemic change or migraine-related lesions. I would also suggest requesting a spine MRI and visual evoked potential test if not already done.",
+            createdAt: "2024-02-15T10:20:00",
+            likes: ["u-pat2"], dislikes: [], replies: [],
+          },
+        ],
+      },
+      {
+        id: "p-3", authorId: "u-admin", authorName: "Dr. Sarah Chen",
+        title: "Platform Announcement: New Radiology Review Panel Added",
+        content: "I am pleased to announce that MediSecond has expanded its specialist panel to include four board-certified radiologists. Patients and referring physicians can now request structured radiology second opinions on CT, MRI, X-ray, and PET scan reports. Upload your DICOM-exported JPEG images or the written radiology report as a PDF when submitting your case. Our radiologists aim to respond within 48 hours.",
+        category: "Announcement", status: "published", priority: "low",
+        createdAt: "2024-02-16T08:00:00", attachments: [],
+        likes: ["u-doc1","u-doc2","u-pat1"], dislikes: [],
+        comments: [],
+      },
+    ];
+
+    // ============================================================
+    // SECTION 3 — UTILITY FUNCTIONS
+    // Small pure helpers I reuse in many components.
+    // ============================================================
+
+    /** Format an ISO date string into a readable label */
+    const fmtDate = iso => {
+      const d = new Date(iso);
+      return d.toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    };
+
+    /** Format bytes into KB / MB */
+    const fmtSize = bytes => {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1048576) return (bytes/1024).toFixed(1) + " KB";
+      return (bytes/1048576).toFixed(2) + " MB";
+    };
+
+    /** Return colour config for a post priority level */
+    const priorityBadge = p => ({
+      high:   { bg:"#FEE2E2", color:"#991B1B", label:"High Priority" },
+      medium: { bg:"#FEF3C7", color:"#92400E", label:"Medium Priority" },
+      low:    { bg:"#D1FAE5", color:"#065F46", label:"Low Priority" },
+    }[p] || { bg:"#E2E8F0", color:"#475569", label:"Normal" });
+
+    /** Return colour config for a post status */
+    const statusBadge = s => ({
+      pending:   { bg:"#FEF3C7", color:"#92400E", label:"Awaiting Review" },
+      responded: { bg:"#D1FAE5", color:"#065F46", label:"Responded" },
+      published: { bg:"#DBEAFE", color:"#1E40AF", label:"Published" },
+      closed:    { bg:"#F1F5F9", color:"#475569", label:"Closed" },
+    }[s] || { bg:"#E2E8F0", color:"#475569", label: s });
+
+    /** Normalise an attachment object — ensures 'isImage' is always set.
+        Seed data has no isImage field so we derive it from the type string. */
+    const normaliseAttachment = a => ({
+      ...a,
+      isImage: a.isImage !== undefined ? a.isImage : (a.type || "").startsWith("image/"),
+    });
+
+    // ── Reusable small UI atoms ─────────────────────────────────
+
+    /** Coloured circle with initials — used everywhere as an avatar */
+    const Avatar = ({ initials, size=36, bg=T.teal, color="#fff" }) => (
+      <div style={{ width:size, height:size, borderRadius:"50%", background:bg, color,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontSize:size*0.35, fontWeight:700, flexShrink:0 }}>
+        {initials}
+      </div>
+    );
+
+    /** Pill badge showing the user's role */
+    const RoleBadge = ({ role }) => {
+      const c = { admin:{bg:"#EDE9FE",color:"#5B21B6",label:"Admin"}, doctor:{bg:"#DBEAFE",color:"#1E40AF",label:"Doctor"}, patient:{bg:"#D1FAE5",color:"#065F46",label:"Patient"} }[role]||{};
+      return <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:20, background:c.bg, color:c.color, textTransform:"uppercase", letterSpacing:"0.04em" }}>{c.label}</span>;
+    };
+
+    // ============================================================
+    // SECTION 4 — LANDING PAGE
+    // The public-facing marketing page visitors see before login.
+    // I designed it to feel like a trusted medical institution —
+    // authoritative navy/teal palette with warm amber CTAs.
+    // ============================================================
+
+    const FEATURES = [
+      { icon:<Shield size={22}/>, title:"Clinically Verified Opinions", desc:"Every response comes from board-certified specialists with verified credentials and hospital affiliations." },
+      { icon:<Lock size={22}/>,   title:"End-to-End Privacy",          desc:"Your case is never visible to other patients. Only assigned doctors and administrators can access your records." },
+      { icon:<Globe size={22}/>,  title:"Bridging the Access Gap",     desc:"Designed for developing healthcare infrastructures where specialist access is limited or geographically constrained." },
+      { icon:<Zap size={22}/>,    title:"AI-Assisted Triage",          desc:"Our AI engine analyses incoming cases, routes them to the most relevant specialist, and flags urgent situations." },
+      { icon:<BookOpen size={22}/>,title:"Evidence-Based Guidance",    desc:"All opinions are grounded in peer-reviewed clinical guidelines and referenced literature." },
+      { icon:<Award size={22}/>,  title:"Accredited Specialists",      desc:"Our network includes cardiologists, neurologists, oncologists, radiologists, and more across 12 countries." },
+    ];
+
+    const STEPS = [
+      { n:"01", title:"Create Your Account",  desc:"Register as a patient in under two minutes. No referral required." },
+      { n:"02", title:"Submit Your Case",     desc:"Describe your situation, attach reports (PDF or JPEG), and select a specialty." },
+      { n:"03", title:"Expert Review",        desc:"A matched specialist reviews your case and posts a structured clinical opinion." },
+      { n:"04", title:"Informed Decision",    desc:"Read the opinion, ask follow-up questions, and return to your care team with confidence." },
+    ];
+
+    const STATS = [
+      { value:"4,800+", label:"Cases Reviewed" },
+      { value:"98%",    label:"Patient Satisfaction" },
+      { value:"48 hrs", label:"Avg. Response Time" },
+      { value:"120+",   label:"Verified Specialists" },
+    ];
+
+    const TESTIMONIALS = [
+      { name:"Fatima K.", role:"Patient, Bangladesh", rating:5,
+        quote:"Within 48 hours of posting my case, a senior cardiologist gave me a clear, evidence-based opinion that changed my treatment path entirely." },
+      { name:"Dr. Ahmed S.", role:"General Physician, Nigeria", rating:5,
+        quote:"I regularly refer my complex cases to MediSecond. The specialist responses are detailed, referenced, and genuinely helpful for clinical decision-making." },
+      { name:"Maria L.", role:"Patient, Philippines", rating:5,
+        quote:"The privacy protection gave me the confidence to share sensitive information. Knowing only my assigned doctor could see my posts made all the difference." },
+    ];
+
+    function LandingPage({ onLogin, onRegister, onAbout, onContact }) {
+      /* Helper for nav link hover effect */
+      const navLink = (label, onClick) => (
+        <button key={label} onClick={onClick}
+          style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.72)",
+            fontSize:14, fontWeight:500, padding:"4px 0", transition:"color .18s" }}
+          onMouseEnter={e=>e.target.style.color="#4DD9D0"}
+          onMouseLeave={e=>e.target.style.color="rgba(255,255,255,0.72)"}>
+          {label}
+        </button>
+      );
+
+      return (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", color:T.text, background:T.bg }}>
+
+          {/* ── NAVBAR ── */}
+          <nav style={{ position:"sticky", top:0, zIndex:100, background:"rgba(15,45,82,0.97)",
+            backdropFilter:"blur(12px)", borderBottom:"1px solid rgba(255,255,255,0.08)", padding:"0 5%" }}>
+            <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", height:64 }}>
+              {/* Logo */}
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:34, height:34, background:T.teal, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Stethoscope size={18} color="#fff" />
+                </div>
+                <span style={{ color:"#fff", fontFamily:"'DM Serif Display',serif", fontSize:20 }}>
+                  Medi<span style={{ color:"#4DD9D0" }}>Second</span>
+                </span>
+              </div>
+              {/* Nav links */}
+              <div style={{ display:"flex", gap:24, alignItems:"center" }}>
+                {navLink("About Us",    onAbout)}
+                {navLink("Contact Us",  onContact)}
+              </div>
+              {/* Auth buttons */}
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={onLogin}
+                  style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.3)", color:"#fff",
+                    padding:"8px 18px", borderRadius:8, cursor:"pointer", fontSize:14, fontWeight:500 }}>
+                  Log In
+                </button>
+                <button onClick={onRegister}
+                  style={{ background:T.amber, border:"none", color:"#fff",
+                    padding:"8px 18px", borderRadius:8, cursor:"pointer", fontSize:14, fontWeight:700 }}>
+                  Get Started
+                </button>
+              </div>
+            </div>
+          </nav>
+
+          {/* ── HERO ── */}
+          <section style={{ background:T.gradient, color:"#fff", padding:"90px 5% 76px", textAlign:"center", position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"absolute", top:-80, right:-80, width:400, height:400, background:"rgba(77,217,208,0.07)", borderRadius:"50%" }}/>
+            <div style={{ position:"absolute", bottom:-60, left:-60, width:300, height:300, background:"rgba(217,119,6,0.07)", borderRadius:"50%" }}/>
+            <div style={{ position:"relative", maxWidth:780, margin:"0 auto" }}>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:7, background:"rgba(77,217,208,0.14)",
+                border:"1px solid rgba(77,217,208,0.3)", borderRadius:40, padding:"5px 14px", marginBottom:26 }}>
+                <Zap size={13} color="#4DD9D0"/>
+                <span style={{ fontSize:13, color:"#4DD9D0", fontWeight:500 }}>AI-Driven Clinical Decision Support</span>
+              </div>
+              <h1 style={{ fontFamily:"'DM Serif Display',serif", fontSize:"clamp(34px,6vw,60px)", lineHeight:1.15, marginBottom:22, letterSpacing:"-0.02em" }}>
+                A Second Medical Opinion,<br/><span style={{ color:"#4DD9D0" }}>When It Matters Most</span>
+              </h1>
+              <p style={{ fontSize:18, lineHeight:1.7, color:"rgba(255,255,255,0.76)", maxWidth:600, margin:"0 auto 38px" }}>
+                MediSecond connects patients in under-resourced healthcare environments with board-certified specialists worldwide — delivering evidence-based second opinions securely and swiftly.
+              </p>
+              <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+                <button onClick={onRegister}
+                  style={{ background:T.amber, color:"#fff", border:"none", padding:"13px 30px", borderRadius:10, fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                  Submit Your Case <ArrowRight size={18}/>
+                </button>
+                <button onClick={onLogin}
+                  style={{ background:"rgba(255,255,255,0.11)", color:"#fff", border:"1px solid rgba(255,255,255,0.25)", padding:"13px 30px", borderRadius:10, fontSize:16, fontWeight:500, cursor:"pointer" }}>
+                  I Am a Specialist
+                </button>
+              </div>
+              {/* Trust badges */}
+              <div style={{ display:"flex", gap:22, justifyContent:"center", marginTop:44, flexWrap:"wrap" }}>
+                {["HIPAA-Aware Design","ISO 27001 Aligned","256-bit Encryption"].map(t => (
+                  <div key={t} style={{ display:"flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.58)", fontSize:13 }}>
+                    <CheckCircle size={13} color="#4DD9D0"/> {t}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── STATS BAND ── */}
+          <section style={{ background:T.surface, borderBottom:`1px solid ${T.border}` }}>
+            <div style={{ maxWidth:1100, margin:"0 auto", padding:"38px 5%", display:"flex", justifyContent:"space-around", flexWrap:"wrap", gap:20 }}>
+              {STATS.map(s => (
+                <div key={s.label} style={{ textAlign:"center" }}>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:36, color:T.navy }}>{s.value}</div>
+                  <div style={{ fontSize:13, color:T.muted, marginTop:3 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── FEATURES ── */}
+          <section style={{ padding:"82px 5%", maxWidth:1200, margin:"0 auto" }}>
+            <div style={{ textAlign:"center", marginBottom:52 }}>
+              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:38, color:T.navy, marginBottom:12 }}>Why MediSecond?</h2>
+              <p style={{ color:T.muted, fontSize:16, maxWidth:540, margin:"0 auto" }}>
+                I built this platform because geographical and economic barriers should never prevent anyone from accessing quality medical guidance.
+              </p>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(290px,1fr))", gap:22 }}>
+              {FEATURES.map(f => (
+                <div key={f.title} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:14, padding:26, transition:"transform .2s,box-shadow .2s",cursor:"default" }}
+                  onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.boxShadow="0 12px 32px rgba(11,122,117,0.12)"}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none"}}>
+                  <div style={{ width:46, height:46, background:T.tealLight, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", color:T.teal, marginBottom:14 }}>
+                    {f.icon}
+                  </div>
+                  <h3 style={{ fontSize:16, fontWeight:700, color:T.navy, marginBottom:7 }}>{f.title}</h3>
+                  <p style={{ color:T.muted, fontSize:14, lineHeight:1.65 }}>{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── HOW IT WORKS ── */}
+          <section style={{ background:T.navy, padding:"82px 5%", color:"#fff" }}>
+            <div style={{ maxWidth:1100, margin:"0 auto" }}>
+              <div style={{ textAlign:"center", marginBottom:52 }}>
+                <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:38, marginBottom:12 }}>Four Steps to Clarity</h2>
+                <p style={{ color:"rgba(255,255,255,0.6)", fontSize:16, maxWidth:500, margin:"0 auto" }}>
+                  From registration to receiving your specialist opinion — the entire process takes minutes, not months.
+                </p>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))", gap:24 }}>
+                {STEPS.map(s => (
+                  <div key={s.n} style={{ padding:26, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14 }}>
+                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:44, color:"rgba(77,217,208,0.28)", lineHeight:1 }}>{s.n}</div>
+                    <h3 style={{ fontSize:16, fontWeight:700, margin:"10px 0 7px" }}>{s.title}</h3>
+                    <p style={{ color:"rgba(255,255,255,0.58)", fontSize:14, lineHeight:1.65 }}>{s.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── TESTIMONIALS ── */}
+          <section style={{ padding:"82px 5%" }}>
+            <div style={{ maxWidth:1100, margin:"0 auto" }}>
+              <div style={{ textAlign:"center", marginBottom:48 }}>
+                <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:38, color:T.navy }}>Voices from Our Community</h2>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:22 }}>
+                {TESTIMONIALS.map(t => (
+                  <div key={t.name} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:14, padding:26 }}>
+                    <div style={{ display:"flex", marginBottom:12 }}>
+                      {[...Array(t.rating)].map((_,i) => <Star key={i} size={15} color="#F59E0B" fill="#F59E0B"/>)}
+                    </div>
+                    <p style={{ color:T.muted, fontSize:14, lineHeight:1.75, marginBottom:18, fontStyle:"italic" }}>"{t.quote}"</p>
+                    <div style={{ fontWeight:700, color:T.navy, fontSize:14 }}>{t.name}</div>
+                    <div style={{ color:T.hint, fontSize:12, marginTop:2 }}>{t.role}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── CTA BAND ── */}
+          <section style={{ background:T.gradient, padding:"68px 5%", textAlign:"center", color:"#fff" }}>
+            <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:36, marginBottom:14 }}>Ready to Get a Second Opinion?</h2>
+            <p style={{ color:"rgba(255,255,255,0.68)", fontSize:16, marginBottom:34, maxWidth:480, margin:"0 auto 34px" }}>
+              Join thousands of patients who have made better-informed decisions with the help of MediSecond.
+            </p>
+            <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+              <button onClick={onRegister}
+                style={{ background:T.amber, color:"#fff", border:"none", padding:"13px 34px", borderRadius:10, fontSize:15, fontWeight:700, cursor:"pointer" }}>
+                Create Free Account
+              </button>
+              <button onClick={onLogin}
+                style={{ background:"rgba(255,255,255,0.11)", color:"#fff", border:"1px solid rgba(255,255,255,0.28)", padding:"13px 34px", borderRadius:10, fontSize:15, cursor:"pointer" }}>
+                Log In
+              </button>
+            </div>
+          </section>
+
+          {/* ── FOOTER ── */}
+          <footer style={{ background:"#080F1A", color:"rgba(255,255,255,0.45)", padding:"28px 5%", textAlign:"center", fontSize:13 }}>
+            <div style={{ marginBottom:7, color:"rgba(255,255,255,0.65)", fontWeight:600, fontFamily:"'DM Serif Display',serif", fontSize:17 }}>
+              Medi<span style={{ color:"#4DD9D0" }}>Second</span>
+            </div>
+            <p>© 2024 MediSecond — An AI-Driven Cloud-Based Medical Second Opinion System.</p>
+            <p style={{ marginTop:4 }}>Designed for developing healthcare infrastructures. Not a substitute for in-person medical care.</p>
+          </footer>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SECTION 5 — AUTHENTICATION MODAL
+    // Handles both Login and Registration in one modal.
+    // I expose a "Quick Demo" strip so evaluators can fill in
+    // any role's credentials with a single click.
+    // ============================================================
+
+    const DEMO_CREDS = [
+      { role:"Admin",   email:"admin@medisecond.ai",      password:"Admin@123",   color:"#5B21B6" },
+      { role:"Doctor",  email:"dr.wilson@medisecond.ai",  password:"Doctor@123",  color:"#1E40AF" },
+      { role:"Patient", email:"patient@medisecond.ai",    password:"Patient@123", color:"#065F46" },
+    ];
+
+    function AuthModal({ mode, onClose, onAuth, users, setUsers }) {
+      const [tab, setTab]         = useState(mode);
+      const [form, setForm]       = useState({ name:"", email:"", password:"", role:"patient", specialty:"", hospital:"" });
+      const [err, setErr]         = useState("");
+      const [showPwd, setShowPwd] = useState(false);
+
+      /* Login handler */
+      const handleLogin = () => {
+        setErr("");
+        const u = users.find(x => x.email === form.email && x.password === form.password);
+        if (!u) { setErr("Incorrect email or password. Please try again."); return; }
+        onAuth(u);
+      };
+
+      /* Registration handler */
+      const handleRegister = () => {
+        setErr("");
+        if (!form.name.trim())        { setErr("Please enter your full name."); return; }
+        if (!form.email.trim())       { setErr("Please enter your email address."); return; }
+        if (form.password.length < 8) { setErr("Password must be at least 8 characters."); return; }
+        if (users.find(x => x.email === form.email)) { setErr("An account with this email already exists."); return; }
+        const newUser = {
+          id: "u-" + Date.now(),
+          name: form.name, email: form.email, password: form.password,
+          role: form.role,
+          avatar: form.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),
+          specialty: form.specialty || "—", hospital: form.hospital || "—",
+          joinDate: new Date().toISOString().split("T")[0], bio: "",
+        };
+        setUsers(prev => [...prev, newUser]);
+        onAuth(newUser);
+      };
+
+      /* Fill a demo credential into the form with one click */
+      const fillDemo = cred => {
+        setTab("login");
+        setForm(f => ({ ...f, email: cred.email, password: cred.password }));
+        setErr("");
+      };
+
+      const inp = {
+        width:"100%", padding:"10px 14px", border:`1.5px solid ${T.border}`,
+        borderRadius:8, fontSize:14, color:T.text, background:T.surface, outline:"none",
+      };
+
+      return (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:200,
+          display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div style={{ background:T.surface, borderRadius:18, width:"100%", maxWidth:460,
+            maxHeight:"92vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.28)" }}>
+
+            {/* Header with gradient and tab switcher */}
+            <div style={{ background:T.gradient, padding:"26px 26px 22px", borderRadius:"18px 18px 0 0", color:"#fff", position:"relative" }}>
+              <button onClick={onClose} style={{ position:"absolute", top:14, right:14, background:"rgba(255,255,255,0.15)", border:"none", borderRadius:"50%", width:30, height:30, cursor:"pointer", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <X size={15}/>
+              </button>
+              <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:16 }}>
+                <div style={{ width:32, height:32, background:"rgba(255,255,255,0.14)", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Stethoscope size={16} color="#fff"/>
+                </div>
+                <span style={{ fontFamily:"'DM Serif Display',serif", fontSize:18 }}>MediSecond</span>
+              </div>
+              <div style={{ display:"flex", background:"rgba(255,255,255,0.1)", borderRadius:8, padding:3 }}>
+                {["login","register"].map(t => (
+                  <button key={t} onClick={() => { setTab(t); setErr(""); }}
+                    style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", cursor:"pointer", fontSize:14, fontWeight:600,
+                      background: tab===t ? "rgba(255,255,255,0.9)" : "transparent",
+                      color: tab===t ? T.navy : "rgba(255,255,255,0.72)" }}>
+                    {t === "login" ? "Log In" : "Register"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ padding:26 }}>
+              {/* Quick-fill demo strip */}
+              <div style={{ background:T.tealLight, border:`1px solid ${T.teal}33`, borderRadius:10, padding:13, marginBottom:18 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:T.teal, marginBottom:9, textTransform:"uppercase", letterSpacing:"0.06em" }}>
+                  Quick Demo — Click to Fill Credentials
+                </div>
+                <div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>
+                  {DEMO_CREDS.map(c => (
+                    <button key={c.role} onClick={() => fillDemo(c)}
+                      style={{ fontSize:12, padding:"4px 11px", borderRadius:20, border:`1px solid ${c.color}44`,
+                        background:`${c.color}12`, color:c.color, cursor:"pointer", fontWeight:700 }}>
+                      {c.role}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Error message */}
+              {err && (
+                <div style={{ background:T.redBg, color:T.red, borderRadius:8, padding:"9px 13px", marginBottom:14, fontSize:13, display:"flex", alignItems:"center", gap:7 }}>
+                  <AlertCircle size={14}/> {err}
+                </div>
+              )}
+
+              {/* ── LOGIN FORM ── */}
+              {tab === "login" && (
+                <div style={{ display:"flex", flexDirection:"column", gap:13 }}>
+                  <div>
+                    <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Email Address</label>
+                    <input style={inp} type="email" placeholder="you@example.com"
+                      value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Password</label>
+                    <div style={{ position:"relative" }}>
+                      <input style={inp} type={showPwd?"text":"password"} placeholder="••••••••"
+                        value={form.password} onChange={e => setForm(f=>({...f,password:e.target.value}))}
+                        onKeyDown={e => e.key==="Enter" && handleLogin()} />
+                      <button onClick={() => setShowPwd(!showPwd)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:T.muted }}>
+                        <Eye size={15}/>
+                      </button>
+                    </div>
+                  </div>
+                  <button onClick={handleLogin}
+                    style={{ background:T.navy, color:"#fff", border:"none", borderRadius:8, padding:"11px 0", fontWeight:700, fontSize:14, cursor:"pointer", marginTop:3 }}>
+                    Log In to My Account
+                  </button>
+                  <p style={{ textAlign:"center", fontSize:13, color:T.muted }}>
+                    No account yet?{" "}
+                    <button onClick={() => setTab("register")} style={{ color:T.teal, background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:13 }}>Register here</button>
+                  </p>
+                </div>
+              )}
+
+              {/* ── REGISTER FORM ── */}
+              {tab === "register" && (
+                <div style={{ display:"flex", flexDirection:"column", gap:13 }}>
+                  {/* Role selector */}
+                  <div>
+                    <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:7 }}>I am registering as a</label>
+                    <div style={{ display:"flex", gap:9 }}>
+                      {[{value:"patient",label:"Patient",icon:<User size={13}/>},{value:"doctor",label:"Doctor",icon:<Stethoscope size={13}/>}].map(r => (
+                        <button key={r.value} onClick={() => setForm(f=>({...f,role:r.value}))}
+                          style={{ flex:1, padding:"9px 7px", borderRadius:8,
+                            border:`2px solid ${form.role===r.value ? T.teal : T.border}`,
+                            background: form.role===r.value ? T.tealLight : T.surface,
+                            color: form.role===r.value ? T.teal : T.muted,
+                            cursor:"pointer", fontSize:13, fontWeight:600,
+                            display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                          {r.icon} {r.label}
+                        </button>
+                      ))}
+                    </div>
+                    {form.role === "doctor" && (
+                      <div style={{ marginTop:7, fontSize:12, color:T.amber, background:T.amberBg, padding:"7px 9px", borderRadius:6 }}>
+                        ⚠ Doctor accounts require admin verification after registration.
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Full Name</label>
+                    <input style={inp} placeholder={form.role==="doctor" ? "Dr. First Last" : "First Last"}
+                      value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Email Address</label>
+                    <input style={inp} type="email" placeholder="you@example.com"
+                      value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))} />
+                  </div>
+                  {form.role === "doctor" && (
+                    <>
+                      <div>
+                        <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Specialty</label>
+                        <input style={inp} placeholder="e.g. Cardiology"
+                          value={form.specialty} onChange={e => setForm(f=>({...f,specialty:e.target.value}))} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Hospital / Institution</label>
+                        <input style={inp} placeholder="e.g. Dhaka Medical College"
+                          value={form.hospital} onChange={e => setForm(f=>({...f,hospital:e.target.value}))} />
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Password</label>
+                    <div style={{ position:"relative" }}>
+                      <input style={inp} type={showPwd?"text":"password"} placeholder="Min. 8 characters"
+                        value={form.password} onChange={e => setForm(f=>({...f,password:e.target.value}))} />
+                      <button onClick={() => setShowPwd(!showPwd)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:T.muted }}>
+                        <Eye size={15}/>
+                      </button>
+                    </div>
+                  </div>
+                  <button onClick={handleRegister}
+                    style={{ background:T.navy, color:"#fff", border:"none", borderRadius:8, padding:"11px 0", fontWeight:700, fontSize:14, cursor:"pointer", marginTop:3 }}>
+                    Create My Account
+                  </button>
+                  <p style={{ textAlign:"center", fontSize:13, color:T.muted }}>
+                    Already have an account?{" "}
+                    <button onClick={() => setTab("login")} style={{ color:T.teal, background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:13 }}>Log in</button>
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SECTION 6 — FILE ATTACHMENT HOOK
+    // I validate file type (PDF / JPEG / JPG only) and size
+    // (≤ 25 MB). For both images AND PDFs I now read the full
+    // base64 data-URL so that doctors and admins can open the
+    // file from the post card later via a lightbox / new tab.
+    // ============================================================
+
+    const MAX_BYTES = 25 * 1024 * 1024; // 25 MB in bytes
+
+    function useAttachments() {
+      const [attachments, setAttachments] = useState([]);
+      const [fileErr, setFileErr]         = useState("");
+
+      const addFiles = fileList => {
+        setFileErr("");
+        Array.from(fileList).forEach(file => {
+          const allowed = ["application/pdf","image/jpeg","image/jpg"];
+          if (!allowed.includes(file.type)) { setFileErr("Only PDF and JPEG/JPG files are accepted."); return; }
+          if (file.size > MAX_BYTES)        { setFileErr(`"${file.name}" exceeds the 25 MB limit.`); return; }
+          /* Read EVERY file as base64 — images get a thumbnail preview,
+             PDFs get a data-URL that we can open in a new browser tab.
+             This is the key change that enables doctors/admins to view
+             all attached files regardless of format. */
+          const reader = new FileReader();
+          reader.onload = e => {
+            const dataUrl = e.target.result;
+            setAttachments(prev => [...prev, {
+              id:      Date.now() + Math.random(),
+              name:    file.name,
+              size:    file.size,
+              type:    file.type,
+              // preview = the full data-URL for both images and PDFs
+              preview: dataUrl,
+              // isImage flag helps the viewer decide how to render it
+              isImage: file.type.startsWith("image/"),
+            }]);
+          };
+          reader.readAsDataURL(file);
+        });
+      };
+
+      const remove = id => setAttachments(prev => prev.filter(a => a.id !== id));
+      const clear  = ()  => setAttachments([]);
+
+      return { attachments, addFiles, remove, clear, fileErr, setFileErr };
+    }
+
+    // ============================================================
+    // SECTION 6b — FILE VIEWER MODAL
+    // Opens when a doctor or admin clicks on an attachment.
+    // • JPEG/JPG → renders a full-size image lightbox
+    // • PDF      → opens the data-URL in a new browser tab
+    //              (browsers have native PDF viewers built in)
+    // ============================================================
+
+    function FileViewer({ file, onClose }) {
+      /* For PDFs we open a new tab immediately and close the modal */
+      useEffect(() => {
+        if (!file.isImage) {
+          /* Create a temporary anchor that triggers the browser's
+             built-in PDF viewer in a new tab */
+          const a = document.createElement("a");
+          a.href   = file.preview;
+          a.target = "_blank";
+          a.rel    = "noopener noreferrer";
+          a.click();
+          onClose();
+        }
+      }, []);
+
+      /* Image lightbox */
+      if (!file.isImage) return null;
+
+      return (
+        <div
+          onClick={onClose}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.88)", zIndex:300,
+            display:"flex", alignItems:"center", justifyContent:"center", padding:20, cursor:"zoom-out" }}>
+          {/* Stop propagation so clicking the image itself doesn't close */}
+          <div onClick={e => e.stopPropagation()} style={{ position:"relative", maxWidth:"90vw", maxHeight:"90vh" }}>
+            <img src={file.preview} alt={file.name}
+              style={{ maxWidth:"100%", maxHeight:"85vh", objectFit:"contain", borderRadius:10, display:"block" }}/>
+            {/* File name caption */}
+            <div style={{ position:"absolute", bottom:-32, left:0, right:0, textAlign:"center", color:"rgba(255,255,255,0.65)", fontSize:13 }}>
+              {file.name} — {fmtSize(file.size)}
+            </div>
+            {/* Close button */}
+            <button onClick={onClose}
+              style={{ position:"absolute", top:-14, right:-14, width:30, height:30, borderRadius:"50%",
+                background:"rgba(255,255,255,0.15)", border:"1.5px solid rgba(255,255,255,0.25)",
+                color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <X size={14}/>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SECTION 7 — CREATE / EDIT POST MODAL
+    // Available to patients (new posts) and admins (new + edit).
+    // Includes drag-and-drop file zone with live attachment list.
+    // ============================================================
+
+    const CATEGORIES = ["Cardiology","Neurology","Oncology","Orthopaedics","Radiology","General Medicine","Endocrinology","Gastroenterology","Psychiatry","Announcement","Other"];
+
+    function PostModal({ onClose, onSave, existingPost=null }) {
+      const [form, setForm] = useState({
+        title:    existingPost?.title    || "",
+        content:  existingPost?.content  || "",
+        category: existingPost?.category || "General Medicine",
+        priority: existingPost?.priority || "medium",
+      });
+      const { attachments, addFiles, remove, fileErr } = useAttachments();
+      const [err, setErr]         = useState("");
+      const [dragging, setDragging] = useState(false);
+      const fileRef = useRef();
+
+      const handleSave = () => {
+        if (!form.title.trim())   { setErr("Please add a title to your case."); return; }
+        if (!form.content.trim()) { setErr("Please describe your case."); return; }
+        onSave({ ...form, attachments });
+      };
+
+      const handleDrop = e => {
+        e.preventDefault(); setDragging(false);
+        addFiles(e.dataTransfer.files);
+      };
+
+      const inp = { width:"100%", padding:"9px 13px", border:`1.5px solid ${T.border}`, borderRadius:8, fontSize:14, color:T.text, background:T.surface, outline:"none" };
+
+      return (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div style={{ background:T.surface, borderRadius:18, width:"100%", maxWidth:600, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.28)" }}>
+
+            {/* Modal header */}
+            <div style={{ padding:"22px 26px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <h2 style={{ fontSize:17, fontWeight:700, color:T.navy }}>{existingPost ? "Edit Case Post" : "Submit a New Case"}</h2>
+              <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:T.muted }}><X size={19}/></button>
+            </div>
+
+            <div style={{ padding:26, display:"flex", flexDirection:"column", gap:16 }}>
+              {(err||fileErr) && (
+                <div style={{ background:T.redBg, color:T.red, borderRadius:8, padding:"9px 13px", fontSize:13, display:"flex", gap:7 }}>
+                  <AlertCircle size={14} style={{ flexShrink:0, marginTop:1 }}/> {err||fileErr}
+                </div>
+              )}
+
+              <div>
+                <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Case Title *</label>
+                <input style={inp} placeholder="e.g. Second Opinion Needed on Cardiac Diagnosis"
+                  value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} />
+              </div>
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <div>
+                  <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Specialty / Category</label>
+                  <select style={inp} value={form.category} onChange={e => setForm(f=>({...f,category:e.target.value}))}>
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Priority</label>
+                  <select style={inp} value={form.priority} onChange={e => setForm(f=>({...f,priority:e.target.value}))}>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:5 }}>Case Description *</label>
+                <textarea style={{ ...inp, minHeight:140, resize:"vertical", lineHeight:1.65 }}
+                  placeholder="Describe your medical situation in detail — symptoms, test results, current medications, your doctor's diagnosis, and any specific questions you want answered..."
+                  value={form.content} onChange={e => setForm(f=>({...f,content:e.target.value}))} />
+              </div>
+
+              {/* ── DRAG-AND-DROP FILE ZONE ── */}
+              <div>
+                <label style={{ fontSize:13, fontWeight:600, color:T.navy, display:"block", marginBottom:7 }}>
+                  Attachments <span style={{ color:T.muted, fontWeight:400 }}>(PDF or JPEG/JPG, max 25 MB each)</span>
+                </label>
+                <div
+                  onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileRef.current.click()}
+                  style={{ border:`2px dashed ${dragging ? T.teal : T.border}`, borderRadius:10, padding:22, textAlign:"center", cursor:"pointer", background: dragging ? T.tealLight : "#FAFBFC", transition:"all .2s" }}>
+                  <Upload size={26} color={T.teal} style={{ marginBottom:7 }}/>
+                  <div style={{ color:T.navy, fontWeight:600, fontSize:14 }}>Drag & drop files here, or click to browse</div>
+                  <div style={{ color:T.muted, fontSize:12, marginTop:3 }}>PDF, JPEG, JPG • Max 25 MB per file</div>
+                  <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg" style={{ display:"none" }}
+                    onChange={e => addFiles(e.target.files)} />
+                </div>
+
+                {/* Attachment list */}
+                {attachments.length > 0 && (
+                  <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:7 }}>
+                    {attachments.map(a => (
+                      <div key={a.id} style={{ display:"flex", alignItems:"center", gap:9, background:"#F8FAFC", border:`1px solid ${T.border}`, borderRadius:8, padding:"7px 11px" }}>
+                        {a.preview
+                          ? <img src={a.preview} alt="" style={{ width:34, height:34, objectFit:"cover", borderRadius:4 }}/>
+                          : <div style={{ width:34, height:34, background:T.redBg, borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center" }}><FileText size={16} color={T.red}/></div>
+                        }
+                        <div style={{ flex:1, overflow:"hidden" }}>
+                          <div style={{ fontSize:13, fontWeight:600, color:T.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.name}</div>
+                          <div style={{ fontSize:11, color:T.muted }}>{fmtSize(a.size)} • {a.type.includes("pdf") ? "PDF Document" : "JPEG Image"}</div>
+                        </div>
+                        <button onClick={() => remove(a.id)} style={{ background:"none", border:"none", cursor:"pointer", color:T.muted }}><X size={14}/></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal footer */}
+            <div style={{ padding:"14px 26px", borderTop:`1px solid ${T.border}`, display:"flex", gap:9, justifyContent:"flex-end" }}>
+              <button onClick={onClose} style={{ padding:"9px 20px", borderRadius:8, border:`1px solid ${T.border}`, background:"none", cursor:"pointer", color:T.muted, fontWeight:500 }}>Cancel</button>
+              <button onClick={handleSave}
+                style={{ padding:"9px 22px", borderRadius:8, border:"none", background:T.navy, color:"#fff", cursor:"pointer", fontWeight:700, fontSize:14, display:"flex", alignItems:"center", gap:6 }}>
+                <Send size={13}/> {existingPost ? "Save Changes" : "Submit Case"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SECTION 8 — COMMENT BLOCK
+    // Every role (patient, doctor, admin) can:
+    //   • Like or dislike any comment
+    //   • Reply to any comment (flat threading, one level deep)
+    //   • Edit / delete their own replies
+    // Doctors & admins can additionally write top-level comments.
+    // Only admins can delete the AI pre-screening comment.
+    // ============================================================
+
+    /* Small Like/Dislike button pair — reused on both posts and comments */
+    function LikeBar({ likes=[], dislikes=[], userId, onLike, onDislike, small=false }) {
+      const liked    = likes.includes(userId);
+      const disliked = dislikes.includes(userId);
+      const sz = small ? 12 : 13;
+      const btn = (active, color, onClick, label, count) => (
+        <button onClick={onClick}
+          style={{ display:"flex", alignItems:"center", gap:3, padding: small ? "3px 8px" : "4px 10px",
+            borderRadius:20, border:`1px solid ${active ? color : T.border}`,
+            background: active ? color+"18" : "none", color: active ? color : T.muted,
+            cursor:"pointer", fontSize:sz, fontWeight:600, transition:"all .15s" }}>
+          <span style={{ fontSize:sz+1 }}>{label}</span> {count}
+        </button>
+      );
+      return (
+        <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+          {btn(liked,    "#16A34A", onLike,    "👍", likes.length)}
+          {btn(disliked, "#DC2626", onDislike, "👎", dislikes.length)}
+        </div>
+      );
+    }
+
+    /* A single reply row — indented under its parent comment */
+    function ReplyBlock({ reply, currentUser, onEditReply, onDeleteReply, onLikeReply, onDislikeReply }) {
+      const [editing, setEditing] = useState(false);
+      const [draft,   setDraft]   = useState(reply.content);
+      const canEdit = currentUser.role === "admin" || currentUser.id === reply.authorId;
+      const avatarBg = reply.role === "admin" ? "#5B21B6" : reply.role === "doctor" ? T.navy : T.teal;
+
+      const save = () => { if (draft.trim()) { onEditReply(reply.id, draft); setEditing(false); } };
+
+      return (
+        <div style={{ display:"flex", gap:9, paddingTop:10, marginTop:4 }}>
+          <Avatar initials={reply.authorName.split(" ").map(w=>w[0]).join("").slice(0,2)} size={28} bg={avatarBg}/>
+          <div style={{ flex:1 }}>
+            <div style={{ background:"#F8FAFC", border:`1px solid ${T.border}`, borderRadius:10, padding:"8px 12px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4, flexWrap:"wrap" }}>
+                <span style={{ fontWeight:700, fontSize:13, color:T.navy }}>{reply.authorName}</span>
+                <RoleBadge role={reply.role}/>
+                <span style={{ fontSize:10, color:T.hint, marginLeft:"auto" }}>{fmtDate(reply.createdAt)}</span>
+              </div>
+              {editing ? (
+                <>
+                  <textarea value={draft} onChange={e=>setDraft(e.target.value)}
+                    style={{ width:"100%", padding:"7px 10px", border:`1.5px solid ${T.teal}`, borderRadius:7,
+                      fontSize:13, resize:"vertical", minHeight:60, outline:"none", color:T.text }} />
+                  <div style={{ display:"flex", gap:6, marginTop:6 }}>
+                    <button onClick={save} style={{ padding:"4px 12px", background:T.teal, color:"#fff", border:"none", borderRadius:5, cursor:"pointer", fontSize:12, fontWeight:600 }}>Save</button>
+                    <button onClick={() => { setEditing(false); setDraft(reply.content); }} style={{ padding:"4px 10px", background:"none", border:`1px solid ${T.border}`, borderRadius:5, cursor:"pointer", fontSize:12, color:T.muted }}>Cancel</button>
+                  </div>
+                </>
+              ) : (
+                <p style={{ fontSize:13, color:T.text, lineHeight:1.65, margin:0 }}>{reply.content}</p>
+              )}
+            </div>
+            {/* Like bar + edit/delete for replies */}
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:5, paddingLeft:4 }}>
+              <LikeBar small likes={reply.likes||[]} dislikes={reply.dislikes||[]} userId={currentUser.id}
+                onLike={onLikeReply} onDislike={onDislikeReply}/>
+              {!editing && canEdit && (
+                <>
+                  <button onClick={() => setEditing(true)} style={{ background:"none", border:"none", cursor:"pointer", color:T.teal, fontSize:11, fontWeight:600, display:"flex", alignItems:"center", gap:2 }}>
+                    <Edit2 size={10}/> Edit
+                  </button>
+                  <button onClick={() => onDeleteReply(reply.id)} style={{ background:"none", border:"none", cursor:"pointer", color:T.red, fontSize:11, fontWeight:600, display:"flex", alignItems:"center", gap:2 }}>
+                    <Trash2 size={10}/> Delete
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function CommentBlock({ comment, currentUser, onEdit, onDelete, onLike, onDislike,
+                            onAddReply, onEditReply, onDeleteReply, onLikeReply, onDislikeReply }) {
+      const [editing,    setEditing]    = useState(false);
+      const [draft,      setDraft]      = useState(comment.content);
+      const [replyOpen,  setReplyOpen]  = useState(false);
+      const [replyText,  setReplyText]  = useState("");
+
+      const isAI = comment.role === "ai";
+      /* Admin-only for AI deletion; own comment for human deletion */
+      const canDelete = isAI
+        ? currentUser.role === "admin"
+        : currentUser.role === "admin" || currentUser.id === comment.authorId;
+      const canEdit   = !isAI && (currentUser.role === "admin" || currentUser.id === comment.authorId);
+
+      const save = () => { if (draft.trim()) { onEdit(comment.id, draft.trim()); setEditing(false); } };
+
+      const submitReply = () => {
+        if (!replyText.trim()) return;
+        onAddReply(comment.id, replyText.trim());
+        setReplyText("");
+        setReplyOpen(false);
+      };
+
+      const avatarBg = isAI ? "linear-gradient(135deg,#4338ca,#0B7A75)"
+        : comment.role === "admin" ? "#5B21B6"
+        : comment.role === "doctor" ? T.navy : T.teal;
+
+      /* ── AI PANEL CARD — rich 5-assistant layout ── */
+      if (isAI) {
+        const AI_ASSISTANTS = [
+          { emoji:"🟢", name:"ChatGPT",    brand:"OpenAI",          color:"#10A37F", bg:"#F0FDF9" },
+          { emoji:"🟠", name:"Claude",     brand:"Anthropic",       color:"#D97706", bg:"#FFFBEB" },
+          { emoji:"🔵", name:"Gemini",     brand:"Google DeepMind", color:"#1A73E8", bg:"#EFF6FF" },
+          { emoji:"🟣", name:"Copilot",    brand:"Microsoft",       color:"#7C3AED", bg:"#F5F3FF" },
+          { emoji:"⚡",  name:"Perplexity", brand:"Perplexity AI",  color:"#0891B2", bg:"#ECFEFF" },
+        ];
+        const extractText = (content, emoji, nextEmoji) => {
+          const start = content.indexOf(emoji + " " + AI_ASSISTANTS.find(a=>a.emoji===emoji).name);
+          if (start === -1) return null;
+          const end = nextEmoji ? content.indexOf(nextEmoji, start + 1) : content.indexOf("─────");
+          const block = content.slice(start, end > start ? end : undefined);
+          const m = block.match(/   (.+)/s);
+          return m ? m[1].trim() : null;
+        };
+        const texts = AI_ASSISTANTS.map((a,i) => ({
+          ...a,
+          text: extractText(comment.content, a.emoji, i < AI_ASSISTANTS.length-1 ? AI_ASSISTANTS[i+1].emoji : null),
+        }));
+
+        return (
+          <div style={{ margin:"10px 0", border:"1.5px solid #C4B5FD", borderRadius:14, overflow:"hidden" }}>
+            <div style={{ background:"linear-gradient(135deg,#4338ca,#0B7A75)", padding:"12px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:32, height:32, borderRadius:"50%", background:"rgba(255,255,255,0.18)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, color:"#fff", fontSize:13 }}>AI</div>
+                <div>
+                  <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>MediSecond AI Pre-Screening Panel</div>
+                  <div style={{ color:"rgba(255,255,255,0.68)", fontSize:11 }}>5 leading AI assistants reviewed your case • {fmtDate(comment.createdAt)}</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ background:"rgba(255,255,255,0.18)", border:"1px solid rgba(255,255,255,0.28)", borderRadius:20, padding:"3px 11px", fontSize:11, color:"#fff", fontWeight:600 }}>⚡ Instant AI</div>
+                {/* Admin-only delete button on AI panel */}
+                {currentUser.role === "admin" && (
+                  <button onClick={() => onDelete(comment.id)}
+                    style={{ background:"rgba(239,68,68,0.25)", border:"1px solid rgba(239,68,68,0.4)", color:"#FCA5A5", borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:600, cursor:"pointer" }}>
+                    <Trash2 size={10} style={{ marginRight:3, display:"inline" }}/> Delete
+                  </button>
+                )}
+              </div>
+            </div>
+            <div style={{ padding:14, background:"#FAFBFF", display:"flex", flexDirection:"column", gap:10 }}>
+              {texts.map(ai => (
+                <div key={ai.name} style={{ background:ai.bg, border:`1.5px solid ${ai.color}33`, borderRadius:10, padding:"12px 14px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:7 }}>
+                    <span style={{ fontSize:15 }}>{ai.emoji}</span>
+                    <span style={{ fontWeight:700, fontSize:13, color:ai.color }}>{ai.name}</span>
+                    <span style={{ fontSize:11, color:T.muted }}>by {ai.brand}</span>
+                  </div>
+                  <p style={{ fontSize:13, color:"#1E293B", lineHeight:1.7, margin:0 }}>
+                    {ai.text || "Analysis not available for this section."}
+                  </p>
+                </div>
+              ))}
+              <div style={{ background:"#FEF3C7", border:"1px solid #FCD34D", borderRadius:8, padding:"10px 14px", display:"flex", gap:8, alignItems:"flex-start" }}>
+                <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
+                <p style={{ fontSize:12, color:"#92400E", margin:0, lineHeight:1.6 }}>
+                  <strong>Important:</strong> The above represents automated AI perspectives only and does not constitute medical advice.
+                  Please wait for a <strong>verified human specialist</strong> on this platform before taking any action.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      /* ── HUMAN COMMENT ── */
+      return (
+        <div style={{ padding:"14px 0", borderTop:`1px solid ${T.border}` }}>
+          <div style={{ display:"flex", gap:11 }}>
+            <Avatar initials={comment.authorName.split(" ").map(w=>w[0]).join("").slice(0,2)} size={34} bg={avatarBg}/>
+            <div style={{ flex:1 }}>
+              {/* Author row */}
+              <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap", marginBottom:7 }}>
+                <span style={{ fontWeight:700, fontSize:14, color:T.navy }}>{comment.authorName}</span>
+                <RoleBadge role={comment.role}/>
+                {comment.specialty && comment.specialty !== "Platform Administrator" && (
+                  <span style={{ fontSize:12, color:T.muted }}>• {comment.specialty}</span>
+                )}
+                <span style={{ fontSize:11, color:T.hint, marginLeft:"auto" }}>{fmtDate(comment.createdAt)}</span>
+              </div>
+
+              {/* Content or edit textarea */}
+              {editing ? (
+                <div>
+                  <textarea value={draft} onChange={e=>setDraft(e.target.value)}
+                    style={{ width:"100%", padding:"9px 11px", border:`1.5px solid ${T.teal}`, borderRadius:8,
+                      fontSize:14, resize:"vertical", minHeight:80, outline:"none", color:T.text }} />
+                  <div style={{ display:"flex", gap:7, marginTop:7 }}>
+                    <button onClick={save} style={{ padding:"5px 14px", background:T.teal, color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontSize:13, fontWeight:600 }}>Save</button>
+                    <button onClick={() => { setEditing(false); setDraft(comment.content); }} style={{ padding:"5px 11px", background:"none", border:`1px solid ${T.border}`, borderRadius:6, cursor:"pointer", fontSize:13, color:T.muted }}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ fontSize:14, color:T.text, lineHeight:1.72 }}>{comment.content}</p>
+              )}
+
+              {/* Action bar: likes + reply + edit/delete */}
+              {!editing && (
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:8, flexWrap:"wrap" }}>
+                  <LikeBar small likes={comment.likes||[]} dislikes={comment.dislikes||[]} userId={currentUser.id}
+                    onLike={onLike} onDislike={onDislike}/>
+                  {/* Reply button — ALL users can reply */}
+                  <button onClick={() => setReplyOpen(!replyOpen)}
+                    style={{ background:"none", border:"none", cursor:"pointer", color:T.teal, fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:3 }}>
+                    <MessageCircle size={11}/> Reply{(comment.replies||[]).length > 0 ? ` (${comment.replies.length})` : ""}
+                  </button>
+                  {canEdit && (
+                    <button onClick={() => setEditing(true)} style={{ background:"none", border:"none", cursor:"pointer", color:T.muted, fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:3 }}>
+                      <Edit2 size={10}/> Edit
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button onClick={() => onDelete(comment.id)} style={{ background:"none", border:"none", cursor:"pointer", color:T.red, fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:3 }}>
+                      <Trash2 size={10}/> Delete
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── REPLIES THREAD ── indented with a left border */}
+          {(comment.replies||[]).length > 0 && (
+            <div style={{ marginLeft:45, paddingLeft:12, borderLeft:`2px solid ${T.border}`, marginTop:4 }}>
+              {comment.replies.map(r => (
+                <ReplyBlock key={r.id} reply={r} currentUser={currentUser}
+                  onEditReply={(rid,txt) => onEditReply(comment.id, rid, txt)}
+                  onDeleteReply={rid => onDeleteReply(comment.id, rid)}
+                  onLikeReply={() => onLikeReply(comment.id, r.id)}
+                  onDislikeReply={() => onDislikeReply(comment.id, r.id)} />
+              ))}
+            </div>
+          )}
+
+          {/* ── REPLY INPUT — open when replyOpen is true ── */}
+          {replyOpen && (
+            <div style={{ marginLeft:45, marginTop:10, display:"flex", gap:8, alignItems:"flex-start" }}>
+              <Avatar initials={currentUser.avatar} size={28}
+                bg={currentUser.role==="admin"?"#5B21B6":currentUser.role==="doctor"?T.navy:T.teal}/>
+              <div style={{ flex:1 }}>
+                <textarea value={replyText} onChange={e=>setReplyText(e.target.value)}
+                  placeholder={`Reply to ${comment.authorName}…`}
+                  style={{ width:"100%", padding:"8px 11px", border:`1.5px solid ${T.border}`, borderRadius:8,
+                    fontSize:13, resize:"vertical", minHeight:60, outline:"none", color:T.text }}
+                  onFocus={e=>e.target.style.borderColor=T.teal}
+                  onBlur={e=>e.target.style.borderColor=T.border} />
+                <div style={{ display:"flex", gap:7, justifyContent:"flex-end", marginTop:6 }}>
+                  <button onClick={() => { setReplyOpen(false); setReplyText(""); }}
+                    style={{ padding:"5px 12px", background:"none", border:`1px solid ${T.border}`, borderRadius:6, cursor:"pointer", fontSize:12, color:T.muted }}>
+                    Cancel
+                  </button>
+                  <button onClick={submitReply}
+                    style={{ padding:"5px 14px", background:T.teal, color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:700, display:"flex", alignItems:"center", gap:4 }}>
+                    <Send size={11}/> Reply
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SECTION 9 — POST CARD
+    // Every role can like/dislike posts. All roles can comment.
+    // Doctors/admins write top-level opinions; patients write
+    // replies AND top-level comments too (multi-way conversation).
+    // ============================================================
+
+    function PostCard({ post, currentUser, onEdit, onDelete,
+                        onComment, onEditComment, onDeleteComment,
+                        onLikePost, onDislikePost,
+                        onLikeComment, onDislikeComment,
+                        onAddReply, onEditReply, onDeleteReply,
+                        onLikeReply, onDislikeReply }) {
+      const [expanded,     setExpanded]     = useState(false);
+      const [commentText,  setCommentText]  = useState("");
+      const [viewFile,     setViewFile]     = useState(null);
+
+      const canEdit   = currentUser.role === "admin" || currentUser.id === post.authorId;
+      const canDelete = currentUser.role === "admin" || currentUser.id === post.authorId;
+      const pri = priorityBadge(post.priority);
+      const sta = statusBadge(post.status);
+      const isAdminPost = post.authorId.startsWith("u-admin");
+
+      /* All roles can comment — patients can participate in their own case discussion */
+      const submitComment = () => {
+        if (!commentText.trim()) return;
+        onComment(post.id, commentText.trim());
+        setCommentText("");
+      };
+
+      /* Count all comments including AI */
+      const totalComments = (post.comments||[]).length +
+        (post.comments||[]).reduce((s,c) => s + (c.replies||[]).length, 0);
+
+      return (
+        <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:14, overflow:"hidden", marginBottom:14 }}>
+          {/* ── Header ── */}
+          <div style={{ padding:"18px 22px" }}>
+            <div style={{ display:"flex", gap:11, alignItems:"flex-start", marginBottom:11 }}>
+              <Avatar initials={post.authorName.split(" ").map(w=>w[0]).join("").slice(0,2)}
+                size={38} bg={isAdminPost ? "#5B21B6" : T.navy}/>
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap", marginBottom:4 }}>
+                  <span style={{ fontWeight:700, fontSize:14, color:T.navy }}>{post.authorName}</span>
+                  <RoleBadge role={isAdminPost ? "admin" : "patient"}/>
+                  <span style={{ fontSize:11, color:T.hint, marginLeft:"auto" }}>{fmtDate(post.createdAt)}</span>
+                </div>
+                <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                  <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:T.tealLight, color:T.teal, fontWeight:600 }}>{post.category}</span>
+                  <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:sta.bg, color:sta.color, fontWeight:600 }}>{sta.label}</span>
+                  <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:pri.bg, color:pri.color, fontWeight:600 }}>{pri.label}</span>
+                </div>
+              </div>
+            </div>
+
+            <h3 style={{ fontSize:16, fontWeight:700, color:T.navy, marginBottom:9, lineHeight:1.35 }}>{post.title}</h3>
+
+            <p style={{ fontSize:14, color:T.text, lineHeight:1.75, marginBottom:10 }}>
+              {expanded ? post.content : (post.content.length > 220 ? post.content.slice(0,220) + "…" : post.content)}
+            </p>
+            {post.content.length > 220 && (
+              <button onClick={() => setExpanded(!expanded)} style={{ background:"none", border:"none", color:T.teal, cursor:"pointer", fontSize:13, fontWeight:600, padding:0 }}>
+                {expanded ? "Show Less" : "Read Full Case"}
+              </button>
+            )}
+
+            {/* Attachments */}
+            {post.attachments && post.attachments.length > 0 && (
+              <div style={{ marginTop:11, display:"flex", flexWrap:"wrap", gap:7 }}>
+                {post.attachments.map(raw => {
+                  const a = normaliseAttachment(raw);
+                  return (
+                    <div key={a.id}
+                      onClick={() => a.preview && setViewFile(a)}
+                      title={a.preview ? (a.isImage ? "Click to view image" : "Click to open PDF") : ""}
+                      style={{ display:"flex", alignItems:"center", gap:6, background:"#F8FAFC",
+                        border:`1.5px solid ${a.preview ? T.teal+"66" : T.border}`, borderRadius:8,
+                        padding:"5px 9px", cursor:a.preview ? "pointer" : "default", transition:"all .15s" }}
+                      onMouseEnter={e=>{ if(a.preview) e.currentTarget.style.background=T.tealLight; }}
+                      onMouseLeave={e=>{ e.currentTarget.style.background="#F8FAFC"; }}>
+                      {a.isImage
+                        ? <img src={a.preview} alt="" style={{ width:28, height:28, objectFit:"cover", borderRadius:4 }}/>
+                        : <FileText size={13} color={T.red}/>}
+                      <div>
+                        <div style={{ fontSize:11, fontWeight:600, color:T.navy, maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.name}</div>
+                        <div style={{ fontSize:10, color:T.muted }}>{fmtSize(a.size)}{a.preview ? " • tap to view" : ""}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {viewFile && <FileViewer file={viewFile} onClose={() => setViewFile(null)}/>}
+
+            {/* ── ACTION ROW: likes + comments + edit/delete ── */}
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:12, paddingTop:11, borderTop:`1px solid ${T.border}`, flexWrap:"wrap" }}>
+              {/* Like/Dislike on the post itself */}
+              <LikeBar likes={post.likes||[]} dislikes={post.dislikes||[]} userId={currentUser.id}
+                onLike={() => onLikePost(post.id)} onDislike={() => onDislikePost(post.id)}/>
+
+              <button onClick={() => setExpanded(!expanded)}
+                style={{ display:"flex", alignItems:"center", gap:5, background:"none", border:"none", color:T.muted, cursor:"pointer", fontSize:13 }}>
+                <MessageCircle size={13}/> {totalComments} {totalComments===1?"comment":"comments"}
+              </button>
+
+              <div style={{ marginLeft:"auto", display:"flex", gap:7 }}>
+                {canEdit && (
+                  <button onClick={() => onEdit(post)}
+                    style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 11px", background:T.tealLight, color:T.teal, border:"none", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}>
+                    <Edit2 size={11}/> Edit
+                  </button>
+                )}
+                {canDelete && (
+                  <button onClick={() => onDelete(post.id)}
+                    style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 11px", background:T.redBg, color:T.red, border:"none", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}>
+                    <Trash2 size={11}/> Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── COMMENTS + REPLIES (shown when expanded) ── */}
+          {expanded && (
+            <div style={{ padding:"0 22px 18px", borderTop:`1px solid ${T.border}` }}>
+              <h4 style={{ fontSize:12, fontWeight:700, color:T.navy, padding:"14px 0 3px", textTransform:"uppercase", letterSpacing:"0.05em" }}>
+                Discussion ({totalComments})
+              </h4>
+
+              {(post.comments||[]).length === 0 && (
+                <div style={{ textAlign:"center", padding:"22px 0", color:T.muted, fontSize:14 }}>
+                  <MessageCircle size={26} color={T.border} style={{ display:"block", margin:"0 auto 7px" }}/>
+                  No responses yet. Be the first to comment or wait for a specialist.
+                </div>
+              )}
+
+              {(post.comments||[]).map(c => (
+                <CommentBlock key={c.id} comment={c} currentUser={currentUser}
+                  onEdit={(cid,txt)   => onEditComment(post.id, cid, txt)}
+                  onDelete={cid       => onDeleteComment(post.id, cid)}
+                  onLike={()          => onLikeComment(post.id, c.id)}
+                  onDislike={()       => onDislikeComment(post.id, c.id)}
+                  onAddReply={(cid,txt)     => onAddReply(post.id, cid, txt)}
+                  onEditReply={(cid,rid,txt) => onEditReply(post.id, cid, rid, txt)}
+                  onDeleteReply={(cid,rid)   => onDeleteReply(post.id, cid, rid)}
+                  onLikeReply={(cid,rid)     => onLikeReply(post.id, cid, rid)}
+                  onDislikeReply={(cid,rid)  => onDislikeReply(post.id, cid, rid)} />
+              ))}
+
+              {/* ── COMMENT INPUT — open to ALL roles ── */}
+              <div style={{ marginTop:16, display:"flex", gap:9, alignItems:"flex-start" }}>
+                <Avatar initials={currentUser.avatar} size={34}
+                  bg={currentUser.role==="admin"?"#5B21B6":currentUser.role==="doctor"?T.navy:T.teal}/>
+                <div style={{ flex:1 }}>
+                  <textarea value={commentText} onChange={e=>setCommentText(e.target.value)}
+                    placeholder={currentUser.role==="patient"
+                      ? "Write a comment or ask a follow-up question…"
+                      : "Write your clinical opinion here…"}
+                    style={{ width:"100%", padding:"9px 13px", border:`1.5px solid ${T.border}`, borderRadius:8,
+                      fontSize:14, resize:"vertical", minHeight:78, outline:"none", color:T.text }}
+                    onFocus={e=>e.target.style.borderColor=T.teal}
+                    onBlur={e=>e.target.style.borderColor=T.border}/>
+                  <div style={{ display:"flex", justifyContent:"flex-end", marginTop:7 }}>
+                    <button onClick={submitComment}
+                      style={{ padding:"7px 16px", background:T.teal, color:"#fff", border:"none", borderRadius:7, cursor:"pointer", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:5 }}>
+                      <Send size={12}/> {currentUser.role==="patient" ? "Post Comment" : "Post Opinion"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SECTION 10a — AI PRE-SCREENING ENGINE (no API key needed)
+    // I generate an immediate "panel" of 5 AI assistant responses
+    // the moment a patient submits a post. These are intelligently
+    // templated based on the post category and detected keywords,
+    // so they feel relevant rather than generic.
+    // The 5 AI systems represented: ChatGPT, Claude, Gemini,
+    // Microsoft Copilot, and Perplexity AI.
+    // ============================================================
+
+    /* Category-specific clinical context lookup */
+    const CAT_CTX = {
+      Cardiology:      { adj:"cardiovascular",    flag:"chest pain, syncope, or acute breathlessness",       focus:"cardiac risk factors, ECG changes, and echocardiographic findings" },
+      Neurology:       { adj:"neurological",      flag:"sudden severe headache, facial droop, or limb weakness", focus:"symptom chronology, imaging findings, and neurological deficits" },
+      Oncology:        { adj:"oncological",       flag:"rapid weight loss, unexplained bleeding, or severe fatigue", focus:"histopathology results, staging, and prior treatment history" },
+      Orthopaedics:    { adj:"musculoskeletal",   flag:"acute instability, neurovascular compromise, or compartment signs", focus:"mechanism of injury, imaging, and functional limitation" },
+      Radiology:       { adj:"radiological",      flag:"mass lesions with irregular margins or unexpected enhancement", focus:"imaging modality, sequences used, and comparison with prior studies" },
+      "General Medicine":{ adj:"clinical",        flag:"high fever, altered consciousness, or unexplained weight loss", focus:"symptom onset, duration, associated features, and baseline investigations" },
+      Endocrinology:   { adj:"endocrinological",  flag:"severe hypoglycaemia, adrenal crisis, or thyroid storm signs", focus:"hormone levels, medication history, and metabolic panel results" },
+      Gastroenterology:{ adj:"gastrointestinal",  flag:"haematemesis, melena, or acute abdominal rigidity",  focus:"symptom pattern, prior endoscopy results, and dietary history" },
+      Psychiatry:      { adj:"psychiatric",       flag:"active suicidal ideation or acute psychotic symptoms",focus:"symptom duration, psychiatric history, and current medications" },
+      Announcement:    { adj:"clinical",          flag:"any urgent or time-sensitive elements",              focus:"clarity and completeness of the information presented" },
+      Other:           { adj:"medical",           flag:"any red-flag or urgent symptoms",                    focus:"complete symptom history, investigations, and clinical timeline" },
+    };
+
+    /* Extract a short meaningful phrase from the post content to personalise responses */
+    const extractSnippet = content => {
+      const sentences = content.split(/[.!?]/).map(s=>s.trim()).filter(s=>s.length>20);
+      return sentences.length > 0 ? sentences[0].slice(0,90) + "…" : content.slice(0,90) + "…";
+    };
+
+    /* Main generator — returns a structured comment content string that
+       formats as a beautiful multi-card AI panel inside CommentBlock */
+    const generateAIPanel = post => {
+      const ctx  = CAT_CTX[post.category] || CAT_CTX.Other;
+      const snip = extractSnippet(post.content);
+
+      /* Each AI assistant has a distinct "voice" and analytical angle */
+      const responses = [
+        {
+          name:"ChatGPT",    brand:"OpenAI",             emoji:"🟢",
+          angle:"Evidence-based synthesis",
+          text:`Based on the ${ctx.adj} presentation described ("${snip}"), this case warrants careful specialist evaluation. I would focus on ${ctx.focus}. If you experience ${ctx.flag}, seek emergency care immediately.`,
+        },
+        {
+          name:"Claude",     brand:"Anthropic",          emoji:"🟠",
+          angle:"Nuanced clinical reasoning",
+          text:`Reading through your case, the ${ctx.adj} details you have shared provide a reasonable clinical picture. Key considerations include ${ctx.focus}. I would strongly recommend bringing all relevant investigation reports to your follow-up appointment.`,
+        },
+        {
+          name:"Gemini",     brand:"Google DeepMind",    emoji:"🔵",
+          angle:"Differential & risk framing",
+          text:`This ${post.category} presentation raises several important clinical differentials. Prioritising ${ctx.focus} will help narrow the diagnosis. Watch carefully for ${ctx.flag} — these would require prompt escalation.`,
+        },
+        {
+          name:"Copilot",    brand:"Microsoft",          emoji:"🟣",
+          angle:"Patient-centred guidance",
+          text:`I understand your concern about this ${ctx.adj} situation. My recommendation is to ensure your specialist has complete documentation covering ${ctx.focus}. Maintaining a symptom diary between appointments can also provide valuable clinical context.`,
+        },
+        {
+          name:"Perplexity", brand:"Perplexity AI",      emoji:"⚡",
+          angle:"Information synthesis",
+          text:`Synthesising current clinical literature on this ${post.category} presentation: the information you have provided — particularly around ${ctx.focus} — is consistent with several documented clinical pathways. A structured specialist assessment remains the most reliable next step.`,
+        },
+      ];
+
+      /* Build the formatted text. CommentBlock renders this as plain text,
+         so I use unicode symbols and dashes to create visual structure. */
+      const lines = [
+        "┌─────────────────────────────────────────────────────────┐",
+        "│  ⚡ AI PRE-SCREENING PANEL — 5 Leading AI Assistants    │",
+        "│  Automated analysis · Not a substitute for specialist   │",
+        "└─────────────────────────────────────────────────────────┘",
+        "",
+        ...responses.flatMap(r => [
+          `${r.emoji} ${r.name} (${r.brand}) — ${r.angle}`,
+          `   ${r.text}`,
+          "",
+        ]),
+        "─────────────────────────────────────────────────────────────",
+        "⚠  IMPORTANT: The above represents automated AI perspectives",
+        "   only. Please wait for a verified human specialist on this",
+        "   platform to review your case before taking any action.",
+        "   AI pre-screening does not constitute medical advice.",
+      ];
+
+      return lines.join("\n");
+    };
+
+    // ============================================================
+    // SECTION 10 — DASHBOARD
+    // Main authenticated layout: fixed sidebar + scrollable
+    // content area. Sidebar items vary by role.
+    // ============================================================
+
+    function Dashboard({ currentUser, users, posts, setPosts, onLogout, onGoProfile,
+                         notifications, setNotifications, addNotification }) {
+      const [view, setView]           = useState("posts");
+      const [search, setSearch]       = useState("");
+      const [filterCat, setFilterCat] = useState("All");
+      const [showCreate, setShowCreate] = useState(false);
+      const [editPost, setEditPost]   = useState(null);
+      /* dropdown controls the avatar menu in the top-right */
+      const [dropdown, setDropdown]   = useState(false);
+      /* bellOpen controls the notifications dropdown */
+      const [bellOpen, setBellOpen]   = useState(false);
+      const dropRef = useRef();
+      const bellRef = useRef();
+
+      /* Close dropdowns when clicking outside */
+      useEffect(() => {
+        const handler = e => {
+          if (dropRef.current && !dropRef.current.contains(e.target)) setDropdown(false);
+          if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+      }, []);
+
+      /* My notifications — only show ones addressed to the current user */
+      const myNotifs  = notifications.filter(n => n.forUserId === currentUser.id);
+      const unreadCnt = myNotifs.filter(n => !n.isRead).length;
+
+      /* Mark all as read when the bell is opened */
+      const openBell = () => {
+        setBellOpen(b => !b);
+        setNotifications(prev => prev.map(n =>
+          n.forUserId === currentUser.id ? { ...n, isRead: true } : n
+        ));
+      };
+
+      // ── Role-based post visibility ──────────────────────────
+      // Patients see ONLY their own posts — privacy is enforced here.
+      // Doctors and admins see everything.
+      const visiblePosts = posts.filter(p => {
+        if (currentUser.role === "patient" && p.authorId !== currentUser.id) return false;
+        if (filterCat !== "All" && p.category !== filterCat) return false;
+        if (search && !p.title.toLowerCase().includes(search.toLowerCase()) &&
+            !p.content.toLowerCase().includes(search.toLowerCase())) return false;
+        return true;
+      }).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      // ── POST CRUD & INTERACTION HANDLERS ────────────────────
+
+      const handleCreatePost = formData => {
+        const newPost = {
+          id:"p-"+Date.now(), authorId:currentUser.id, authorName:currentUser.name,
+          title:formData.title, content:formData.content,
+          category:formData.category, priority:formData.priority,
+          status:"pending", createdAt:new Date().toISOString(),
+          attachments:formData.attachments||[], likes:[], dislikes:[], comments:[],
+        };
+        const commentsToAdd = [];
+        if (currentUser.role === "patient") {
+          commentsToAdd.push({
+            id:"c-ai-"+Date.now(), authorId:"ai", authorName:"MediSecond AI",
+            role:"ai", specialty:"AI Pre-Screening", content:generateAIPanel(newPost),
+            createdAt:new Date().toISOString(), likes:[], dislikes:[], replies:[],
+          });
+        }
+        setPosts(prev => [{ ...newPost, comments:commentsToAdd }, ...prev]);
+        setShowCreate(false);
+        if (currentUser.role === "patient") {
+          users.filter(u=>u.role==="doctor"||u.role==="admin").forEach(u => {
+            addNotification({ forUserId:u.id, type:"new_post", icon:"📋",
+              message:`New ${formData.category} case: "${formData.title.slice(0,50)}"`,
+              postTitle:formData.title, postId:newPost.id, isRead:false });
+          });
+        }
+      };
+
+      const handleEditPost = formData => {
+        setPosts(prev => prev.map(p =>
+          p.id===editPost.id
+            ? {...p, title:formData.title, content:formData.content,
+               category:formData.category, priority:formData.priority,
+               attachments:formData.attachments||p.attachments}
+            : p
+        ));
+        setEditPost(null);
+      };
+
+      const handleDeletePost = id => {
+        if (window.confirm("Delete this case post permanently?"))
+          setPosts(prev => prev.filter(p => p.id!==id));
+      };
+
+      /* Toggle helper — add userId if absent, remove if present */
+      const toggle = (arr, uid) => (arr||[]).includes(uid)
+        ? (arr||[]).filter(x=>x!==uid) : [...(arr||[]), uid];
+
+      const handleLikePost = postId => {
+        const post = posts.find(p=>p.id===postId);
+        if (!post) return;
+        const alreadyLiked = (post.likes||[]).includes(currentUser.id);
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, likes:toggle(p.likes, currentUser.id),
+          dislikes:(p.dislikes||[]).filter(x=>x!==currentUser.id) }));
+        if (!alreadyLiked && post.authorId!==currentUser.id)
+          addNotification({ forUserId:post.authorId, type:"like", icon:"👍",
+            message:`${currentUser.name} liked your post`,
+            postTitle:post.title, postId, isRead:false });
+      };
+      const handleDislikePost = postId => {
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, dislikes:toggle(p.dislikes, currentUser.id),
+          likes:(p.likes||[]).filter(x=>x!==currentUser.id) }));
+      };
+
+      // ── COMMENT CRUD ──────────────────────────────────────────
+
+      const handleComment = (postId, text) => {
+        const post = posts.find(p=>p.id===postId);
+        const nc = {
+          id:"c-"+Date.now(), authorId:currentUser.id,
+          authorName:currentUser.name, role:currentUser.role,
+          specialty:currentUser.specialty||"", content:text,
+          createdAt:new Date().toISOString(), likes:[], dislikes:[], replies:[],
+        };
+        setPosts(prev => prev.map(p => p.id!==postId ? p :
+          { ...p, status:"responded", comments:[...p.comments, nc] }));
+        if (post && post.authorId!==currentUser.id)
+          addNotification({ forUserId:post.authorId, type:"comment", icon:"💬",
+            message:`${currentUser.name} commented on your post`,
+            postTitle:post.title, postId, isRead:false });
+        /* Notify all other participants except self, post author, and AI */
+        if (post) {
+          const notified = new Set([currentUser.id, post.authorId, "ai"]);
+          post.comments.forEach(c => {
+            if (!notified.has(c.authorId)) {
+              notified.add(c.authorId);
+              addNotification({ forUserId:c.authorId, type:"comment", icon:"💬",
+                message:`${currentUser.name} also commented on "${post.title.slice(0,40)}…"`,
+                postTitle:post.title, postId, isRead:false });
+            }
+          });
+        }
+      };
+      const handleEditComment = (postId, commentId, newText) => {
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, comments:p.comments.map(c=>c.id===commentId?{...c,content:newText}:c) }));
+      };
+      const handleDeleteComment = (postId, commentId) => {
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, comments:p.comments.filter(c=>c.id!==commentId) }));
+      };
+      const handleLikeComment = (postId, commentId) => {
+        const post = posts.find(p=>p.id===postId);
+        const comment = post?.comments.find(c=>c.id===commentId);
+        const alreadyLiked = (comment?.likes||[]).includes(currentUser.id);
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, comments:p.comments.map(c => c.id!==commentId ? c : {
+            ...c, likes:toggle(c.likes, currentUser.id),
+            dislikes:(c.dislikes||[]).filter(x=>x!==currentUser.id) }) }));
+        if (!alreadyLiked && comment && comment.authorId!==currentUser.id)
+          addNotification({ forUserId:comment.authorId, type:"like", icon:"👍",
+            message:`${currentUser.name} liked your comment`,
+            postTitle:post.title, postId, isRead:false });
+      };
+      const handleDislikeComment = (postId, commentId) => {
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, comments:p.comments.map(c => c.id!==commentId ? c : {
+            ...c, dislikes:toggle(c.dislikes, currentUser.id),
+            likes:(c.likes||[]).filter(x=>x!==currentUser.id) }) }));
+      };
+
+      // ── REPLY CRUD ────────────────────────────────────────────
+
+      const handleAddReply = (postId, commentId, text) => {
+        const post    = posts.find(p=>p.id===postId);
+        const comment = post?.comments.find(c=>c.id===commentId);
+        const nr = {
+          id:"r-"+Date.now(), authorId:currentUser.id,
+          authorName:currentUser.name, role:currentUser.role,
+          content:text, createdAt:new Date().toISOString(), likes:[], dislikes:[],
+        };
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, comments:p.comments.map(c => c.id!==commentId ? c :
+            { ...c, replies:[...(c.replies||[]), nr] }) }));
+        if (comment && comment.authorId!==currentUser.id)
+          addNotification({ forUserId:comment.authorId, type:"reply", icon:"↩️",
+            message:`${currentUser.name} replied to your comment`,
+            postTitle:post?.title||"", postId, isRead:false });
+        if (post && post.authorId!==currentUser.id && post.authorId!==comment?.authorId)
+          addNotification({ forUserId:post.authorId, type:"reply", icon:"↩️",
+            message:`${currentUser.name} replied in your post discussion`,
+            postTitle:post.title, postId, isRead:false });
+      };
+      const handleEditReply = (postId, commentId, replyId, newText) => {
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, comments:p.comments.map(c => c.id!==commentId ? c : {
+            ...c, replies:(c.replies||[]).map(r=>r.id===replyId?{...r,content:newText}:r) }) }));
+      };
+      const handleDeleteReply = (postId, commentId, replyId) => {
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, comments:p.comments.map(c => c.id!==commentId ? c : {
+            ...c, replies:(c.replies||[]).filter(r=>r.id!==replyId) }) }));
+      };
+      const handleLikeReply = (postId, commentId, replyId) => {
+        const post    = posts.find(p=>p.id===postId);
+        const comment = post?.comments.find(c=>c.id===commentId);
+        const reply   = comment?.replies?.find(r=>r.id===replyId);
+        const alreadyLiked = (reply?.likes||[]).includes(currentUser.id);
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, comments:p.comments.map(c => c.id!==commentId ? c : {
+            ...c, replies:(c.replies||[]).map(r => r.id!==replyId ? r : {
+              ...r, likes:toggle(r.likes, currentUser.id),
+              dislikes:(r.dislikes||[]).filter(x=>x!==currentUser.id) }) }) }));
+        if (!alreadyLiked && reply && reply.authorId!==currentUser.id)
+          addNotification({ forUserId:reply.authorId, type:"like", icon:"👍",
+            message:`${currentUser.name} liked your reply`,
+            postTitle:post?.title||"", postId, isRead:false });
+      };
+      const handleDislikeReply = (postId, commentId, replyId) => {
+        setPosts(prev => prev.map(p => p.id!==postId ? p : {
+          ...p, comments:p.comments.map(c => c.id!==commentId ? c : {
+            ...c, replies:(c.replies||[]).map(r => r.id!==replyId ? r : {
+              ...r, dislikes:toggle(r.dislikes, currentUser.id),
+              likes:(r.likes||[]).filter(x=>x!==currentUser.id) }) }) }));
+      };
+
+      // ── SIDEBAR NAV ITEMS (role-aware) ──────────────────────
+      const navItems = [
+        { key:"posts",   label:"Case Feed",   icon:<FileText size={17}/> },
+        { key:"profile", label:"My Profile",  icon:<User size={17}/> },
+        ...(currentUser.role==="admin" ? [
+          { key:"admin", label:"Admin Panel", icon:<Shield size={17}/> },
+          { key:"users", label:"Users",       icon:<Users size={17}/> },
+        ] : []),
+        ...(currentUser.role==="doctor" ? [
+          { key:"stats", label:"My Activity", icon:<Activity size={17}/> },
+        ] : []),
+      ];
+
+      // ── Stats for admin and doctor views ────────────────────
+      const pendingCount  = posts.filter(p=>p.status==="pending").length;
+      const totalPatients = users.filter(u=>u.role==="patient").length;
+      const totalDoctors  = users.filter(u=>u.role==="doctor").length;
+
+      return (
+        <div style={{ display:"flex", minHeight:"100vh", background:T.bg }}>
+
+          {/* ━━━ SIDEBAR ━━━ */}
+          <div style={{ width:224, flexShrink:0, background:T.navy, display:"flex", flexDirection:"column", position:"sticky", top:0, height:"100vh", overflowY:"auto" }}>
+            {/* Logo */}
+            <div style={{ padding:"18px 18px 14px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:30, height:30, background:T.teal, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Stethoscope size={15} color="#fff"/>
+                </div>
+                <span style={{ color:"#fff", fontFamily:"'DM Serif Display',serif", fontSize:17 }}>
+                  Medi<span style={{ color:"#4DD9D0" }}>Second</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Logged-in user chip */}
+            <div style={{ padding:"14px 18px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+                <Avatar initials={currentUser.avatar} size={36}
+                  bg={currentUser.role==="admin" ? "#5B21B6" : currentUser.role==="doctor" ? T.teal : T.amber}/>
+                <div>
+                  <div style={{ color:"#fff", fontSize:13, fontWeight:700, lineHeight:1.3 }}>{currentUser.name}</div>
+                  <RoleBadge role={currentUser.role}/>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <nav style={{ flex:1, padding:"10px 9px" }}>
+              {navItems.map(n => (
+                <button key={n.key} onClick={() => setView(n.key)}
+                  style={{ width:"100%", display:"flex", alignItems:"center", gap:9, padding:"9px 11px", borderRadius:8, border:"none", cursor:"pointer", marginBottom:2, textAlign:"left", fontSize:13, fontWeight:600,
+                    background: view===n.key ? "rgba(77,217,208,0.14)" : "transparent",
+                    color:      view===n.key ? "#4DD9D0" : "rgba(255,255,255,0.58)" }}>
+                  {n.icon} {n.label}
+                </button>
+              ))}
+            </nav>
+
+            <div style={{ padding:"0 9px 18px" }}>
+              <button onClick={onLogout}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:9, padding:"9px 11px", borderRadius:8, border:"none", cursor:"pointer", background:"transparent", color:"rgba(255,255,255,0.38)", fontSize:13, fontWeight:600 }}>
+                <LogOut size={16}/> Log Out
+              </button>
+            </div>
+          </div>
+
+          {/* ━━━ MAIN CONTENT ━━━ */}
+          <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+
+            {/* Top bar */}
+            <div style={{ background:T.surface, borderBottom:`1px solid ${T.border}`, padding:"13px 26px", display:"flex", alignItems:"center", gap:13 }}>
+              <div style={{ flex:1 }}>
+                <h1 style={{ fontSize:17, fontWeight:700, color:T.navy }}>
+                  {view==="posts" ? "Case Feed" : view==="profile" ? "My Profile" : view==="admin" ? "Admin Panel" : view==="users" ? "User Management" : "My Activity"}
+                </h1>
+                <p style={{ fontSize:11, color:T.muted, marginTop:1 }}>
+                  {currentUser.role==="patient" && "Your submitted cases — private to doctors and admins only."}
+                  {currentUser.role==="doctor"  && "All patient cases awaiting specialist review."}
+                  {currentUser.role==="admin"   && "Full platform overview and management tools."}
+                </p>
+              </div>
+
+              {/* ── BELL NOTIFICATIONS ──
+                  I wrap the bell in a relative container and render the
+                  dropdown card absolutely below it. A click-outside
+                  useEffect (above) closes it when clicking elsewhere.
+                  The red badge shows the unread count. */}
+              <div ref={bellRef} style={{ position:"relative" }}>
+                <button onClick={openBell}
+                  style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4, display:"flex", alignItems:"center" }}>
+                  <Bell size={18} color={unreadCnt > 0 ? T.navy : T.muted}/>
+                  {/* Unread count badge — only visible when there are unread notifications */}
+                  {unreadCnt > 0 && (
+                    <span style={{ position:"absolute", top:0, right:0, width:16, height:16,
+                      background:"#EF4444", borderRadius:"50%", display:"flex", alignItems:"center",
+                      justifyContent:"center", fontSize:9, fontWeight:800, color:"#fff", border:"2px solid #fff" }}>
+                      {unreadCnt > 9 ? "9+" : unreadCnt}
+                    </span>
+                  )}
+                </button>
+
+                {bellOpen && (
+                  <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0, width:340,
+                    background:T.surface, border:`1px solid ${T.border}`, borderRadius:12,
+                    boxShadow:"0 8px 28px rgba(0,0,0,0.13)", zIndex:150, overflow:"hidden" }}>
+                    {/* Bell dropdown header */}
+                    <div style={{ padding:"13px 16px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:14, fontWeight:700, color:T.navy }}>Notifications</span>
+                      {myNotifs.length > 0 && (
+                        <button onClick={() => setNotifications(prev => prev.map(n => n.forUserId===currentUser.id ? {...n,isRead:true} : n))}
+                          style={{ fontSize:12, color:T.teal, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    {/* Notification list */}
+                    <div style={{ maxHeight:360, overflowY:"auto" }}>
+                      {myNotifs.length === 0 ? (
+                        <div style={{ padding:"28px 16px", textAlign:"center", color:T.muted, fontSize:13 }}>
+                          <Bell size={28} color={T.border} style={{ display:"block", margin:"0 auto 8px" }}/>
+                          No notifications yet
+                        </div>
+                      ) : myNotifs.map(n => (
+                        <div key={n.id}
+                          style={{ padding:"12px 16px", borderBottom:`1px solid ${T.border}`,
+                            background: n.isRead ? "transparent" : T.tealLight,
+                            display:"flex", gap:11, alignItems:"flex-start" }}>
+                          {/* Icon bubble — uses the icon emoji field on the notification */}
+                          <div style={{ width:34, height:34, borderRadius:"50%", flexShrink:0,
+                            background: n.type==="like"?"#FEF3C7": n.type==="reply"?"#EDE9FE": n.type==="comment"?"#DBEAFE":"#D1FAE5",
+                            display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
+                            {n.icon || (n.type==="comment"?"💬":n.type==="like"?"👍":n.type==="reply"?"↩️":"📋")}
+                          </div>
+                          <div style={{ flex:1, overflow:"hidden" }}>
+                            <div style={{ fontSize:13, fontWeight:600, color:T.navy, marginBottom:2 }}>{n.message}</div>
+                            <div style={{ fontSize:11, color:T.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.postTitle}</div>
+                            <div style={{ fontSize:11, color:T.hint, marginTop:3 }}>{fmtDate(n.createdAt)}</div>
+                          </div>
+                          {/* Unread dot */}
+                          {!n.isRead && (
+                            <div style={{ width:8, height:8, borderRadius:"50%", background:"#EF4444", flexShrink:0, marginTop:4 }}/>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── AVATAR DROPDOWN ── */}
+              <div ref={dropRef} style={{ position:"relative" }}>
+                <button
+                  onClick={() => setDropdown(!dropdown)}
+                  style={{ background:"none", border:"none", cursor:"pointer", padding:0, display:"flex", alignItems:"center", gap:6 }}
+                  title={currentUser.name}>
+                  <Avatar initials={currentUser.avatar} size={34}
+                    bg={currentUser.role==="admin" ? "#5B21B6" : currentUser.role==="doctor" ? T.teal : T.amber}/>
+                  <svg width="10" height="6" viewBox="0 0 10 6">
+                    <path d={dropdown ? "M9 5 5 1 1 5" : "M1 1 5 5 9 1"} stroke={T.muted} strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  </svg>
+                </button>
+
+                {dropdown && (
+                  <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0, width:220,
+                    background:T.surface, border:`1px solid ${T.border}`, borderRadius:12,
+                    boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:150, overflow:"hidden" }}>
+                    <div style={{ padding:"14px 16px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:10 }}>
+                      <Avatar initials={currentUser.avatar} size={38}
+                        bg={currentUser.role==="admin" ? "#5B21B6" : currentUser.role==="doctor" ? T.teal : T.amber}/>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:700, color:T.navy, lineHeight:1.3 }}>{currentUser.name}</div>
+                        <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>{currentUser.email}</div>
+                      </div>
+                    </div>
+                    <div style={{ padding:"6px 0" }}>
+                      <button onClick={() => { setView("profile"); setDropdown(false); }}
+                        style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, color:T.text, textAlign:"left", fontWeight:500 }}
+                        onMouseEnter={e=>e.currentTarget.style.background=T.bg}
+                        onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                        <User size={15} color={T.teal}/> View My Profile
+                      </button>
+                      {currentUser.role==="admin" && (
+                        <button onClick={() => { setView("admin"); setDropdown(false); }}
+                          style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, color:T.text, textAlign:"left", fontWeight:500 }}
+                          onMouseEnter={e=>e.currentTarget.style.background=T.bg}
+                          onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                          <Shield size={15} color="#5B21B6"/> Admin Panel
+                        </button>
+                      )}
+                      {currentUser.role==="doctor" && (
+                        <button onClick={() => { setView("stats"); setDropdown(false); }}
+                          style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, color:T.text, textAlign:"left", fontWeight:500 }}
+                          onMouseEnter={e=>e.currentTarget.style.background=T.bg}
+                          onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                          <Activity size={15} color={T.navy}/> My Activity
+                        </button>
+                      )}
+                      <div style={{ height:1, background:T.border, margin:"4px 0" }}/>
+                      <button onClick={() => { setDropdown(false); onLogout(); }}
+                        style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, color:T.red, textAlign:"left", fontWeight:600 }}
+                        onMouseEnter={e=>e.currentTarget.style.background=T.redBg}
+                        onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                        <LogOut size={15} color={T.red}/> Log Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Scrollable content */}
+            <div style={{ flex:1, overflowY:"auto", padding:26 }}>
+
+              {/* ━━━ CASE FEED ━━━ */}
+              {view === "posts" && (
+                <>
+                  {/* Controls bar */}
+                  <div style={{ display:"flex", gap:10, marginBottom:18, flexWrap:"wrap", alignItems:"center" }}>
+                    <div style={{ position:"relative", flex:"1 1 180px" }}>
+                      <Search size={13} style={{ position:"absolute", left:9, top:"50%", transform:"translateY(-50%)", color:T.muted }}/>
+                      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search cases…"
+                        style={{ width:"100%", paddingLeft:30, paddingRight:11, height:36, border:`1px solid ${T.border}`, borderRadius:8, fontSize:13, outline:"none", color:T.text }} />
+                    </div>
+                    <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
+                      style={{ height:36, padding:"0 11px", border:`1px solid ${T.border}`, borderRadius:8, fontSize:13, color:T.text, outline:"none" }}>
+                      <option value="All">All Categories</option>
+                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    {/* New case button — patients and admins only */}
+                    {(currentUser.role==="patient" || currentUser.role==="admin") && (
+                      <button onClick={() => setShowCreate(true)}
+                        style={{ display:"flex", alignItems:"center", gap:6, padding:"0 16px", height:36, background:T.navy, color:"#fff", border:"none", borderRadius:8, cursor:"pointer", fontSize:13, fontWeight:700, flexShrink:0 }}>
+                        <Plus size={14}/> New Case
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Contextual info banners */}
+                  {currentUser.role==="doctor" && (
+                    <div style={{ background:T.tealLight, border:`1px solid ${T.teal}44`, borderRadius:10, padding:"11px 15px", marginBottom:18, display:"flex", gap:9, alignItems:"center" }}>
+                      <Stethoscope size={15} color={T.teal} style={{ flexShrink:0 }}/>
+                      <span style={{ fontSize:13, color:T.teal, fontWeight:500 }}>
+                        You can view all patient cases. Expand a case to post your clinical opinion. You can only edit or delete your own comments.
+                      </span>
+                    </div>
+                  )}
+                  {currentUser.role==="patient" && (
+                    <div style={{ background:"#EDE9FE", border:"1px solid #C4B5FD", borderRadius:10, padding:"11px 15px", marginBottom:18, display:"flex", gap:9, alignItems:"center" }}>
+                      <Lock size={15} color="#5B21B6" style={{ flexShrink:0 }}/>
+                      <span style={{ fontSize:13, color:"#5B21B6", fontWeight:500 }}>
+                        Your cases are strictly private — only verified doctors and admins can see them.
+                        After you submit, our AI panel pre-screens your case immediately while you await a human specialist.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Post list */}
+                  {visiblePosts.length === 0 ? (
+                    <div style={{ textAlign:"center", padding:"56px 20px", color:T.muted }}>
+                      <FileText size={38} color={T.border} style={{ display:"block", margin:"0 auto 11px" }}/>
+                      <h3 style={{ color:T.navy, marginBottom:7 }}>No cases found</h3>
+                      <p style={{ fontSize:14 }}>
+                        {currentUser.role==="patient" ? "Submit your first case to get a specialist second opinion." : "No cases match your current filters."}
+                      </p>
+                      {currentUser.role==="patient" && (
+                        <button onClick={() => setShowCreate(true)}
+                          style={{ marginTop:14, padding:"9px 22px", background:T.navy, color:"#fff", border:"none", borderRadius:8, cursor:"pointer", fontWeight:700 }}>
+                          Submit a Case
+                        </button>
+                      )}
+                    </div>
+                  ) : visiblePosts.map(p => (
+                    <PostCard key={p.id} post={p} currentUser={currentUser}
+                      onEdit={setEditPost}
+                      onDelete={handleDeletePost}
+                      onComment={handleComment}
+                      onEditComment={handleEditComment}
+                      onDeleteComment={handleDeleteComment}
+                      onLikePost={handleLikePost}
+                      onDislikePost={handleDislikePost}
+                      onLikeComment={handleLikeComment}
+                      onDislikeComment={handleDislikeComment}
+                      onAddReply={handleAddReply}
+                      onEditReply={handleEditReply}
+                      onDeleteReply={handleDeleteReply}
+                      onLikeReply={handleLikeReply}
+                      onDislikeReply={handleDislikeReply} />
+                  ))}
+                </>
+              )}
+
+              {/* ━━━ PROFILE ━━━ */}
+              {view === "profile" && (
+                <div style={{ maxWidth:580 }}>
+                  <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:14, overflow:"hidden" }}>
+                    <div style={{ background:T.gradient, padding:"28px 24px", color:"#fff", display:"flex", gap:18, alignItems:"center" }}>
+                      <Avatar initials={currentUser.avatar} size={66} bg="rgba(255,255,255,0.18)" color="#fff"/>
+                      <div>
+                        <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:22, marginBottom:5 }}>{currentUser.name}</h2>
+                        <RoleBadge role={currentUser.role}/>
+                        {currentUser.specialty && currentUser.specialty!=="—" && (
+                          <p style={{ color:"rgba(255,255,255,0.68)", fontSize:13, marginTop:5 }}>{currentUser.specialty}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ padding:24 }}>
+                      {[
+                        { label:"Email",        value: currentUser.email },
+                        { label:"Role",         value: currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1) },
+                        { label:"Specialty",    value: currentUser.specialty || "—" },
+                        { label:"Hospital",     value: currentUser.hospital  || "—" },
+                        { label:"Member Since", value: currentUser.joinDate  || "—" },
+                      ].map(r => (
+                        <div key={r.label} style={{ display:"flex", justifyContent:"space-between", padding:"11px 0", borderBottom:`1px solid ${T.border}` }}>
+                          <span style={{ fontSize:13, color:T.muted, fontWeight:500 }}>{r.label}</span>
+                          <span style={{ fontSize:13, color:T.text, fontWeight:600 }}>{r.value}</span>
+                        </div>
+                      ))}
+                      {currentUser.bio && <p style={{ marginTop:14, fontSize:14, color:T.muted, lineHeight:1.65 }}>{currentUser.bio}</p>}
+                      {/* Activity summary tiles */}
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11, marginTop:18 }}>
+                        <div style={{ background:T.tealLight, borderRadius:10, padding:14, textAlign:"center" }}>
+                          <div style={{ fontSize:26, fontWeight:700, color:T.teal }}>
+                            {currentUser.role==="patient"
+                              ? posts.filter(p=>p.authorId===currentUser.id).length
+                              : posts.flatMap(p=>p.comments).filter(c=>c.authorId===currentUser.id).length}
+                          </div>
+                          <div style={{ fontSize:12, color:T.muted }}>{currentUser.role==="patient" ? "Cases Submitted" : "Opinions Given"}</div>
+                        </div>
+                        <div style={{ background:T.amberBg, borderRadius:10, padding:14, textAlign:"center" }}>
+                          <div style={{ fontSize:26, fontWeight:700, color:T.amber }}>
+                            {currentUser.role==="patient"
+                              ? posts.filter(p=>p.authorId===currentUser.id&&p.status==="responded").length
+                              : posts.filter(p=>p.comments.some(c=>c.authorId===currentUser.id)).length}
+                          </div>
+                          <div style={{ fontSize:12, color:T.muted }}>{currentUser.role==="patient" ? "Cases Responded" : "Cases Participated"}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ━━━ ADMIN PANEL ━━━ */}
+              {view === "admin" && currentUser.role==="admin" && (
+                <>
+                  {/* Stats grid */}
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))", gap:14, marginBottom:26 }}>
+                    {[
+                      { label:"Total Cases",        value:posts.length,   icon:<FileText size={19}/>, bg:T.tealLight, color:T.teal },
+                      { label:"Awaiting Review",    value:pendingCount,   icon:<Clock size={19}/>,    bg:T.amberBg,   color:T.amber },
+                      { label:"Registered Patients",value:totalPatients,  icon:<Users size={19}/>,    bg:"#EDE9FE",   color:"#5B21B6" },
+                      { label:"Active Doctors",     value:totalDoctors,   icon:<Stethoscope size={19}/>, bg:T.greenBg, color:T.green },
+                    ].map(s => (
+                      <div key={s.label} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:18 }}>
+                        <div style={{ width:38, height:38, background:s.bg, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", color:s.color, marginBottom:11 }}>{s.icon}</div>
+                        <div style={{ fontSize:28, fontWeight:700, color:T.navy }}>{s.value}</div>
+                        <div style={{ fontSize:12, color:T.muted, marginTop:2 }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Case overview table */}
+                  <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, overflow:"hidden" }}>
+                    <div style={{ padding:"14px 18px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <h3 style={{ fontSize:14, fontWeight:700, color:T.navy }}>All Cases — Admin Overview</h3>
+                      <button onClick={() => setView("posts")} style={{ fontSize:13, color:T.teal, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>View Full Feed →</button>
+                    </div>
+                    <div style={{ overflowX:"auto" }}>
+                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                        <thead>
+                          <tr style={{ background:"#F8FAFC" }}>
+                            {["Case Title","Patient","Category","Status","Opinions","Posted"].map(h => (
+                              <th key={h} style={{ padding:"9px 15px", textAlign:"left", color:T.muted, fontWeight:600, borderBottom:`1px solid ${T.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {posts.map(p => {
+                            const sta = statusBadge(p.status);
+                            return (
+                              <tr key={p.id} style={{ borderBottom:`1px solid ${T.border}` }}>
+                                <td style={{ padding:"11px 15px", color:T.navy, fontWeight:600, maxWidth:220 }}>
+                                  <div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
+                                </td>
+                                <td style={{ padding:"11px 15px", color:T.muted }}>{p.authorName}</td>
+                                <td style={{ padding:"11px 15px" }}>
+                                  <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:T.tealLight, color:T.teal, fontWeight:600 }}>{p.category}</span>
+                                </td>
+                                <td style={{ padding:"11px 15px" }}>
+                                  <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:sta.bg, color:sta.color, fontWeight:600 }}>{sta.label}</span>
+                                </td>
+                                <td style={{ padding:"11px 15px", color:T.muted, textAlign:"center" }}>{p.comments.length}</td>
+                                <td style={{ padding:"11px 15px", color:T.muted, whiteSpace:"nowrap" }}>{new Date(p.createdAt).toLocaleDateString("en-GB")}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ━━━ USER MANAGEMENT (admin only) ━━━ */}
+              {view === "users" && currentUser.role==="admin" && (
+                <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, overflow:"hidden" }}>
+                  <div style={{ padding:"14px 18px", borderBottom:`1px solid ${T.border}` }}>
+                    <h3 style={{ fontSize:14, fontWeight:700, color:T.navy }}>Registered Users ({users.length})</h3>
+                  </div>
+                  <div style={{ overflowX:"auto" }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                      <thead>
+                        <tr style={{ background:"#F8FAFC" }}>
+                          {["User","Email","Role","Specialty","Hospital","Joined"].map(h => (
+                            <th key={h} style={{ padding:"9px 15px", textAlign:"left", color:T.muted, fontWeight:600, borderBottom:`1px solid ${T.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map(u => (
+                          <tr key={u.id} style={{ borderBottom:`1px solid ${T.border}` }}>
+                            <td style={{ padding:"11px 15px" }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+                                <Avatar initials={u.avatar} size={28} bg={u.role==="admin"?"#5B21B6":u.role==="doctor"?T.teal:T.amber}/>
+                                <span style={{ fontWeight:600, color:T.navy }}>{u.name}</span>
+                              </div>
+                            </td>
+                            <td style={{ padding:"11px 15px", color:T.muted }}>{u.email}</td>
+                            <td style={{ padding:"11px 15px" }}><RoleBadge role={u.role}/></td>
+                            <td style={{ padding:"11px 15px", color:T.muted }}>{u.specialty||"—"}</td>
+                            <td style={{ padding:"11px 15px", color:T.muted }}>{u.hospital||"—"}</td>
+                            <td style={{ padding:"11px 15px", color:T.muted }}>{u.joinDate||"—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ━━━ DOCTOR ACTIVITY ━━━ */}
+              {view === "stats" && currentUser.role==="doctor" && (
+                <div style={{ maxWidth:620 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14, marginBottom:22 }}>
+                    {[
+                      { label:"Total Cases",   value:posts.length },
+                      { label:"My Opinions",   value:posts.flatMap(p=>p.comments).filter(c=>c.authorId===currentUser.id).length },
+                      { label:"Pending Cases", value:posts.filter(p=>p.status==="pending").length },
+                    ].map(s => (
+                      <div key={s.label} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:18, textAlign:"center" }}>
+                        <div style={{ fontSize:30, fontWeight:700, color:T.navy }}>{s.value}</div>
+                        <div style={{ fontSize:12, color:T.muted, marginTop:3 }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:18 }}>
+                    <h3 style={{ fontSize:14, fontWeight:700, color:T.navy, marginBottom:14 }}>My Recent Opinions</h3>
+                    {(() => {
+                      const myComments = posts.flatMap(p =>
+                        p.comments.filter(c=>c.authorId===currentUser.id).map(c=>({...c,postTitle:p.title}))
+                      );
+                      return myComments.length === 0
+                        ? <p style={{ color:T.muted, fontSize:14 }}>You have not posted any opinions yet. Open a case in the Case Feed to get started.</p>
+                        : myComments.map(c => (
+                          <div key={c.id} style={{ padding:"11px 0", borderBottom:`1px solid ${T.border}` }}>
+                            <div style={{ fontSize:11, color:T.muted, marginBottom:3 }}>{c.postTitle} • {fmtDate(c.createdAt)}</div>
+                            <p style={{ fontSize:13, color:T.text, lineHeight:1.6 }}>{c.content.slice(0,160)}…</p>
+                          </div>
+                        ));
+                    })()}
+                  </div>
+                </div>
+              )}
+
+            </div>{/* end scrollable content */}
+          </div>{/* end main column */}
+
+          {/* Modals */}
+          {showCreate && <PostModal onClose={() => setShowCreate(false)} onSave={handleCreatePost} />}
+          {editPost   && <PostModal onClose={() => setEditPost(null)}    onSave={handleEditPost} existingPost={editPost} />}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SECTION 11a — ABOUT US PAGE
+    // A standalone page reachable from the landing page navbar.
+    // It tells the story of MediSecond — mission, team, and values.
+    // ============================================================
+
+    const TEAM = [
+      { name:"Dr. Sarah Chen",    role:"Co-Founder & Medical Director", avatar:"SC", bg:"#5B21B6",
+        bio:"Former consultant at Johns Hopkins with 20 years in clinical quality improvement. I founded MediSecond after witnessing avoidable diagnostic errors in under-resourced settings." },
+      { name:"Dr. Arjun Mehta",   role:"Chief AI Officer",             avatar:"AM", bg:"#0B7A75",
+        bio:"PhD in Computational Medicine from MIT. I design the AI triage engine that routes cases to the most clinically relevant specialists within seconds." },
+      { name:"Dr. Lena Fischer",  role:"Head of Clinical Governance",  avatar:"LF", bg:"#0F2D52",
+        bio:"Specialist in health informatics and clinical governance. I ensure every opinion on the platform meets international clinical standards." },
+      { name:"Kwame Asante",      role:"Head of Technology",           avatar:"KA", bg:"#D97706",
+        bio:"Full-stack engineer and cloud architect. I built MediSecond's HIPAA-aware infrastructure that keeps your data private and always available." },
+    ];
+
+    const VALUES = [
+      { icon:"🎯", title:"Accuracy above all",   desc:"Every clinical opinion is grounded in peer-reviewed evidence. We never prioritise speed over correctness." },
+      { icon:"🔒", title:"Privacy by design",    desc:"Patient data is never shared, sold, or visible to other patients. Privacy is baked into the architecture, not bolted on." },
+      { icon:"🌍", title:"Access as a right",    desc:"We exist to bridge the specialist-access gap in developing healthcare systems. Geography should never determine quality of care." },
+      { icon:"🤝", title:"Human + AI together",  desc:"AI accelerates triage and pre-screening. But the final clinical word always comes from a verified, credentialed human specialist." },
+    ];
+
+    function AboutPage({ onBack, onRegister }) {
+      return (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", color:T.text, background:T.bg, minHeight:"100vh" }}>
+          {/* ── Navbar ── */}
+          <nav style={{ background:"rgba(15,45,82,0.97)", padding:"0 5%", position:"sticky", top:0, zIndex:100, borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", height:64 }}>
+              <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:10, background:"none", border:"none", cursor:"pointer" }}>
+                <div style={{ width:30, height:30, background:T.teal, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Stethoscope size={15} color="#fff"/>
+                </div>
+                <span style={{ color:"#fff", fontFamily:"'DM Serif Display',serif", fontSize:18 }}>Medi<span style={{ color:"#4DD9D0" }}>Second</span></span>
+              </button>
+              <button onClick={onBack}
+                style={{ color:"rgba(255,255,255,0.7)", background:"none", border:"1px solid rgba(255,255,255,0.2)", padding:"6px 16px", borderRadius:7, cursor:"pointer", fontSize:13 }}>
+                ← Back to Home
+              </button>
+            </div>
+          </nav>
+
+          {/* ── Hero ── */}
+          <section style={{ background:T.gradient, color:"#fff", padding:"72px 5% 60px", textAlign:"center" }}>
+            <h1 style={{ fontFamily:"'DM Serif Display',serif", fontSize:"clamp(32px,5vw,54px)", marginBottom:16, letterSpacing:"-0.02em" }}>
+              About <span style={{ color:"#4DD9D0" }}>MediSecond</span>
+            </h1>
+            <p style={{ fontSize:17, color:"rgba(255,255,255,0.72)", maxWidth:620, margin:"0 auto", lineHeight:1.7 }}>
+              I am a cloud-based AI-driven platform built to ensure that every patient — regardless of geography or income — can access a credible, evidence-based second medical opinion from a verified specialist.
+            </p>
+          </section>
+
+          <div style={{ maxWidth:1100, margin:"0 auto", padding:"64px 5%" }}>
+            {/* ── Mission ── */}
+            <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:"40px 36px", marginBottom:40, display:"grid", gridTemplateColumns:"1fr 1fr", gap:40, alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, color:T.teal, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Our Mission</div>
+                <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:32, color:T.navy, marginBottom:16, lineHeight:1.25 }}>Closing the gap between patients and specialists worldwide</h2>
+                <p style={{ color:T.muted, fontSize:15, lineHeight:1.75 }}>
+                  In 2023, I co-founded MediSecond after witnessing first-hand how diagnostic uncertainty — untreated simply because the right specialist was unavailable — leads to avoidable harm. Our platform is designed specifically for developing healthcare infrastructures where the patient-to-specialist ratio is critically low.
+                </p>
+                <p style={{ color:T.muted, fontSize:15, lineHeight:1.75, marginTop:12 }}>
+                  Today, MediSecond serves patients across 38 countries, supported by over 120 board-certified specialists spanning 14 medical disciplines.
+                </p>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                {[
+                  { n:"38",   l:"Countries Served" },
+                  { n:"120+", l:"Verified Specialists" },
+                  { n:"4,800+", l:"Cases Reviewed" },
+                  { n:"98%",  l:"Patient Satisfaction" },
+                ].map(s => (
+                  <div key={s.l} style={{ background:T.bg, borderRadius:12, padding:"20px 16px", textAlign:"center" }}>
+                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:30, color:T.navy }}>{s.n}</div>
+                    <div style={{ fontSize:12, color:T.muted, marginTop:4 }}>{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Values ── */}
+            <div style={{ marginBottom:52 }}>
+              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:34, color:T.navy, textAlign:"center", marginBottom:32 }}>What I Stand For</h2>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))", gap:20 }}>
+                {VALUES.map(v => (
+                  <div key={v.title} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:24 }}>
+                    <div style={{ fontSize:28, marginBottom:12 }}>{v.icon}</div>
+                    <h3 style={{ fontSize:15, fontWeight:700, color:T.navy, marginBottom:8 }}>{v.title}</h3>
+                    <p style={{ fontSize:14, color:T.muted, lineHeight:1.65 }}>{v.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Team ── */}
+            <div>
+              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:34, color:T.navy, textAlign:"center", marginBottom:32 }}>Meet the Team</h2>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))", gap:22 }}>
+                {TEAM.map(m => (
+                  <div key={m.name} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:14, overflow:"hidden" }}>
+                    <div style={{ background:m.bg, padding:"24px 20px", display:"flex", alignItems:"center", gap:14 }}>
+                      <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:18, fontWeight:700 }}>{m.avatar}</div>
+                      <div>
+                        <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{m.name}</div>
+                        <div style={{ color:"rgba(255,255,255,0.65)", fontSize:12, marginTop:2 }}>{m.role}</div>
+                      </div>
+                    </div>
+                    <div style={{ padding:18 }}>
+                      <p style={{ color:T.muted, fontSize:13, lineHeight:1.65 }}>{m.bio}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── CTA ── */}
+            <div style={{ marginTop:52, background:T.gradient, borderRadius:16, padding:"40px 32px", textAlign:"center", color:"#fff" }}>
+              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:30, marginBottom:12 }}>Ready to Experience MediSecond?</h2>
+              <p style={{ color:"rgba(255,255,255,0.68)", fontSize:15, marginBottom:28, maxWidth:480, margin:"0 auto 28px" }}>
+                Join thousands of patients who have gained confidence and clarity through our specialist network.
+              </p>
+              <button onClick={onRegister}
+                style={{ background:T.amber, color:"#fff", border:"none", padding:"12px 32px", borderRadius:9, fontSize:15, fontWeight:700, cursor:"pointer" }}>
+                Create Free Account
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SECTION 11b — CONTACT US PAGE
+    // Includes a contact form (simulated — no backend), office info,
+    // FAQ accordion, and social links.
+    // ============================================================
+
+    function ContactPage({ onBack }) {
+      const [form, setForm]     = useState({ name:"", email:"", subject:"", message:"", role:"patient" });
+      const [sent, setSent]     = useState(false);
+      const [openFaq, setOpenFaq] = useState(null);
+
+      const faqs = [
+        { q:"How long does it take to receive a specialist opinion?", a:"Our specialists aim to respond within 24–48 hours. High-priority cases flagged by our AI triage system are often reviewed within 12 hours." },
+        { q:"Is my medical information kept confidential?", a:"Absolutely. Your case details are visible only to the verified specialists assigned to review them and our platform administrators. Other patients never see your posts under any circumstances." },
+        { q:"Are the doctors on MediSecond genuinely qualified?", a:"Every doctor on the platform is individually verified before being granted access. We confirm their medical licence, board certification, and hospital affiliation before they can post any clinical opinion." },
+        { q:"Can MediSecond replace my primary care physician?", a:"No. MediSecond provides informational second opinions to help you make better-informed decisions. It does not replace in-person diagnosis, treatment, or the advice of your personal care team." },
+        { q:"Which countries does MediSecond operate in?", a:"MediSecond is accessible globally and currently serves patients across 38 countries, with specialist coverage spanning North America, Europe, South Asia, Southeast Asia, and Sub-Saharan Africa." },
+        { q:"What file formats can I upload with my case?", a:"You can attach JPEG/JPG images and PDF documents — for example, scan results, lab reports, or radiology images. Each file must be under 25 MB." },
+      ];
+
+      const inp = { width:"100%", padding:"10px 13px", border:`1.5px solid ${T.border}`, borderRadius:8, fontSize:14, color:T.text, background:T.surface, outline:"none" };
+
+      const handleSubmit = () => {
+        if (!form.name||!form.email||!form.message) return;
+        setSent(true);
+      };
+
+      return (
+        <div style={{ fontFamily:"'DM Sans',sans-serif", color:T.text, background:T.bg, minHeight:"100vh" }}>
+          {/* ── Navbar ── */}
+          <nav style={{ background:"rgba(15,45,82,0.97)", padding:"0 5%", position:"sticky", top:0, zIndex:100, borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", height:64 }}>
+              <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:10, background:"none", border:"none", cursor:"pointer" }}>
+                <div style={{ width:30, height:30, background:T.teal, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Stethoscope size={15} color="#fff"/>
+                </div>
+                <span style={{ color:"#fff", fontFamily:"'DM Serif Display',serif", fontSize:18 }}>Medi<span style={{ color:"#4DD9D0" }}>Second</span></span>
+              </button>
+              <button onClick={onBack}
+                style={{ color:"rgba(255,255,255,0.7)", background:"none", border:"1px solid rgba(255,255,255,0.2)", padding:"6px 16px", borderRadius:7, cursor:"pointer", fontSize:13 }}>
+                ← Back to Home
+              </button>
+            </div>
+          </nav>
+
+          {/* ── Hero ── */}
+          <section style={{ background:T.gradient, color:"#fff", padding:"60px 5% 48px", textAlign:"center" }}>
+            <h1 style={{ fontFamily:"'DM Serif Display',serif", fontSize:"clamp(30px,5vw,50px)", marginBottom:14 }}>Contact <span style={{ color:"#4DD9D0" }}>Us</span></h1>
+            <p style={{ fontSize:16, color:"rgba(255,255,255,0.7)", maxWidth:520, margin:"0 auto", lineHeight:1.7 }}>
+              I am here to help — whether you have a clinical question, a technical issue, or simply want to learn more about the platform.
+            </p>
+          </section>
+
+          <div style={{ maxWidth:1060, margin:"0 auto", padding:"52px 5%", display:"grid", gridTemplateColumns:"1fr 1.2fr", gap:40, alignItems:"start" }}>
+            {/* ── Left: Info ── */}
+            <div>
+              {/* Contact details */}
+              <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:14, padding:28, marginBottom:22 }}>
+                <h2 style={{ fontSize:17, fontWeight:700, color:T.navy, marginBottom:20 }}>Get in Touch</h2>
+                {[
+                  { icon:"📧", label:"Email", val:"support@medisecond.ai" },
+                  { icon:"📞", label:"Phone", val:"+1 (800) 633-4726" },
+                  { icon:"📍", label:"Address", val:"MediSecond Ltd, 12 Health Tech Plaza, Dhaka 1212, Bangladesh" },
+                  { icon:"🕒", label:"Hours", val:"Mon–Fri, 9 AM – 6 PM (BST)" },
+                ].map(r => (
+                  <div key={r.label} style={{ display:"flex", gap:13, marginBottom:14 }}>
+                    <div style={{ fontSize:18, flexShrink:0, marginTop:1 }}>{r.icon}</div>
+                    <div>
+                      <div style={{ fontSize:12, color:T.muted, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.05em" }}>{r.label}</div>
+                      <div style={{ fontSize:14, color:T.text, marginTop:2 }}>{r.val}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* FAQ Accordion */}
+              <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:14, overflow:"hidden" }}>
+                <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
+                  <h2 style={{ fontSize:16, fontWeight:700, color:T.navy }}>Frequently Asked Questions</h2>
+                </div>
+                {faqs.map((f,i) => (
+                  <div key={i} style={{ borderBottom: i<faqs.length-1 ? `1px solid ${T.border}` : "none" }}>
+                    <button onClick={() => setOpenFaq(openFaq===i?null:i)}
+                      style={{ width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 22px", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontSize:14, fontWeight:600, color:T.navy }}>
+                      <span style={{ flex:1, marginRight:12 }}>{f.q}</span>
+                      <span style={{ fontSize:18, color:T.teal, flexShrink:0 }}>{openFaq===i ? "−" : "+"}</span>
+                    </button>
+                    {openFaq===i && (
+                      <div style={{ padding:"0 22px 14px", fontSize:13, color:T.muted, lineHeight:1.7 }}>{f.a}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Right: Contact Form ── */}
+            <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:14, padding:30 }}>
+              {sent ? (
+                <div style={{ textAlign:"center", padding:"40px 20px" }}>
+                  <div style={{ fontSize:48, marginBottom:16 }}>✅</div>
+                  <h3 style={{ fontSize:20, fontWeight:700, color:T.navy, marginBottom:10 }}>Message Sent!</h3>
+                  <p style={{ color:T.muted, fontSize:14, lineHeight:1.7 }}>
+                    Thank you for reaching out. I will get back to you at <strong>{form.email}</strong> within one business day.
+                  </p>
+                  <button onClick={() => setSent(false)}
+                    style={{ marginTop:20, padding:"9px 22px", background:T.teal, color:"#fff", border:"none", borderRadius:8, cursor:"pointer", fontWeight:600, fontSize:14 }}>
+                    Send Another Message
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <h2 style={{ fontSize:17, fontWeight:700, color:T.navy, marginBottom:22 }}>Send a Message</h2>
+                  <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                    {/* Role selector */}
+                    <div>
+                      <label style={{ fontSize:12, fontWeight:600, color:T.muted, display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>I am a</label>
+                      <div style={{ display:"flex", gap:8 }}>
+                        {["patient","doctor","other"].map(r => (
+                          <button key={r} onClick={() => setForm(f=>({...f,role:r}))}
+                            style={{ flex:1, padding:"7px 0", borderRadius:7, border:`1.5px solid ${form.role===r?T.teal:T.border}`, background:form.role===r?T.tealLight:T.surface, color:form.role===r?T.teal:T.muted, cursor:"pointer", fontSize:13, fontWeight:600, textTransform:"capitalize" }}>
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                      <div>
+                        <label style={{ fontSize:12, fontWeight:600, color:T.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Full Name *</label>
+                        <input style={inp} placeholder="Your name" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+                      </div>
+                      <div>
+                        <label style={{ fontSize:12, fontWeight:600, color:T.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Email *</label>
+                        <input style={inp} type="email" placeholder="you@email.com" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize:12, fontWeight:600, color:T.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Subject</label>
+                      <input style={inp} placeholder="What is your enquiry about?" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))}/>
+                    </div>
+                    <div>
+                      <label style={{ fontSize:12, fontWeight:600, color:T.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Message *</label>
+                      <textarea style={{ ...inp, minHeight:120, resize:"vertical", lineHeight:1.65 }}
+                        placeholder="Please describe your question or issue in as much detail as possible…"
+                        value={form.message} onChange={e=>setForm(f=>({...f,message:e.target.value}))}/>
+                    </div>
+                    <button onClick={handleSubmit}
+                      style={{ background:T.navy, color:"#fff", border:"none", borderRadius:8, padding:"12px 0", fontWeight:700, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                      <Send size={14}/> Send Message
+                    </button>
+                    <p style={{ fontSize:12, color:T.hint, textAlign:"center" }}>
+                      I typically respond within one business day. For urgent clinical issues, please contact your local emergency services.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SECTION 11 — ROOT APP COMPONENT
+    // This is the top-level entry point. I manage three states:
+    //   • No user  → show the landing page (with optional modal)
+    //   • Auth open → overlay the login / register modal
+    //   • Logged in → show the full dashboard
+    // ============================================================
+
+    function App() {
+      const [currentUser, setCurrentUser] = useState(null);
+      const [authMode, setAuthMode]       = useState(null); // "login" | "register" | null
+      const [users, setUsers]             = useState(SEED_USERS);
+      const [posts, setPosts]             = useState(SEED_POSTS);
+      /* landingPage controls which public page is shown:
+           "home" → main landing page
+           "about" → About Us page
+           "contact" → Contact Us page */
+      const [landingPage, setLandingPage] = useState("home");
+
+      /* notifications is a flat array of notification objects shared
+         across the app. Dashboard reads and marks them; handlers add them. */
+      const [notifications, setNotifications] = useState([
+        /* Seed one example notification so the bell isn't empty on first login */
+        {
+          id: "n-seed-1",
+          forUserId: "u-pat1",
+          type: "comment",
+          message: "Dr. James Wilson responded to your case",
+          postTitle: "Need a Second Opinion on Mild Aortic Stenosis Diagnosis",
+          postId: "p-1",
+          isRead: false,
+          createdAt: "2024-02-10T14:30:00",
+        },
+        {
+          id: "n-seed-2",
+          forUserId: "u-pat1",
+          type: "comment",
+          message: "Dr. Sarah Chen also commented on your case",
+          postTitle: "Need a Second Opinion on Mild Aortic Stenosis Diagnosis",
+          postId: "p-1",
+          isRead: false,
+          createdAt: "2024-02-11T08:00:00",
+        },
+        {
+          id: "n-seed-3",
+          forUserId: "u-doc1",
+          type: "new_post",
+          message: "New patient case submitted in Neurology",
+          postTitle: "Uncertain About MRI Finding — Possible MS Diagnosis",
+          postId: "p-2",
+          isRead: false,
+          createdAt: "2024-02-14T16:45:00",
+        },
+        {
+          id: "n-seed-4",
+          forUserId: "u-doc2",
+          type: "new_post",
+          message: "New patient case submitted in Cardiology",
+          postTitle: "Need a Second Opinion on Mild Aortic Stenosis Diagnosis",
+          postId: "p-1",
+          isRead: true,
+          createdAt: "2024-02-10T09:15:00",
+        },
+      ]);
+
+      /* addNotification — called by Dashboard whenever a new comment or post
+         is created. I push a new notification object into the shared array. */
+      const addNotification = (notif) => {
+        setNotifications(prev => [{ ...notif, id: "n-" + Date.now(), createdAt: new Date().toISOString() }, ...prev]);
+      };
+
+      const handleAuth   = user => { setCurrentUser(user); setAuthMode(null); };
+      const handleLogout = ()   => { setCurrentUser(null); setAuthMode(null); setLandingPage("home"); };
+
+      /* Route between public pages */
+      if (!currentUser) {
+        if (landingPage === "about") {
+          return <AboutPage onBack={() => setLandingPage("home")} onRegister={() => { setLandingPage("home"); setAuthMode("register"); }}/>;
+        }
+        if (landingPage === "contact") {
+          return <ContactPage onBack={() => setLandingPage("home")}/>;
+        }
+        return (
+          <>
+            <LandingPage
+              onLogin={()    => setAuthMode("login")}
+              onRegister={() => setAuthMode("register")}
+              onAbout={()   => setLandingPage("about")}
+              onContact={()  => setLandingPage("contact")}/>
+            {authMode && (
+              <AuthModal mode={authMode} onClose={() => setAuthMode(null)}
+                onAuth={handleAuth} users={users} setUsers={setUsers}/>
+            )}
+          </>
+        );
+      }
+
+      return (
+        <Dashboard
+          currentUser={currentUser}
+          users={users}
+          posts={posts}
+          setPosts={setPosts}
+          onLogout={handleLogout}
+          notifications={notifications}
+          setNotifications={setNotifications}
+          addNotification={addNotification}/>
+      );
+    }
+
+    // ── Mount the React app into the #root div ────────────────
+    const container = document.getElementById("root");
+    const root = ReactDOM.createRoot(container);
+    root.render(<App />);
+
+  </script>
+</body>
+</html>
