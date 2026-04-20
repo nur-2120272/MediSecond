@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MediSecond — Figma Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',sans-serif;background:#1e1e1e;overflow:hidden}
+input,textarea,select,button{font-family:'Inter',sans-serif}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px}
+
+/* ── FIGMA PROTOTYPE VIEWER ── */
+#viewer{position:fixed;inset:0;display:flex;flex-direction:column;background:#1e1e1e}
+#toolbar{height:48px;background:#2c2c2c;border-bottom:1px solid #3a3a3a;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;z-index:1000}
+.tb-brand{display:flex;align-items:center;gap:10px;color:#fff;font-size:13px;font-weight:600}
+.tb-brand-dot{width:8px;height:8px;background:#18a0fb;border-radius:50%}
+.tb-screen-name{color:#b0b0b0;font-size:12px;font-weight:500}
+.tb-nav{display:flex;align-items:center;gap:8px}
+.tb-nav-btn{width:28px;height:28px;background:#3a3a3a;border:1px solid #4a4a4a;border-radius:6px;color:#c0c0c0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:.15s}
+.tb-nav-btn:hover{background:#4a4a4a;color:#fff}
+.tb-nav-btn:disabled{opacity:.35;cursor:not-allowed}
+.tb-counter{color:#888;font-size:11px;font-weight:500;min-width:40px;text-align:center}
+.tb-zoom{color:#888;font-size:11px;background:#3a3a3a;padding:4px 10px;border-radius:4px;border:1px solid #4a4a4a}
+.tb-dots{display:flex;gap:6px;align-items:center}
+.tb-dot{width:7px;height:7px;border-radius:50%;background:#3a3a3a;cursor:pointer;border:1px solid #4a4a4a;transition:.15s}
+.tb-dot.active{background:#18a0fb;border-color:#18a0fb}
+
+#canvas{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative}
+
+/* Screen frame */
+.screen-frame{background:#fff;position:absolute;transition:all .35s cubic-bezier(.4,0,.2,1);transform-origin:center center;overflow:hidden}
+.screen-frame.active{z-index:10}
+.screen-frame.prev{opacity:0;transform:translateX(-30px) scale(.96);pointer-events:none;z-index:5}
+.screen-frame.next{opacity:0;transform:translateX(30px) scale(.96);pointer-events:none;z-index:5}
+
+/* Frame label */
+.frame-label{position:absolute;bottom:-32px;left:0;right:0;text-align:center;color:#666;font-size:11px;font-weight:500;white-space:nowrap;pointer-events:none}
+
+/* ─── DESIGN TOKENS ─── */
+:root{
+  --c-navy:#0f2d52;
+  --c-teal:#0b7a75;
+  --c-teal2:#4dd9d0;
+  --c-teal-bg:#e6f4f3;
+  --c-amber:#d97706;
+  --c-amber-bg:#fef3c7;
+  --c-green:#065f46;
+  --c-green-bg:#d1fae5;
+  --c-red:#991b1b;
+  --c-red-bg:#fee2e2;
+  --c-blue:#1e40af;
+  --c-blue-bg:#dbeafe;
+  --c-purple:#5b21b6;
+  --c-purple-bg:#ede9fe;
+  --c-bg:#f8fafc;
+  --c-surface:#ffffff;
+  --c-border:#e2e8f0;
+  --c-border2:#cbd5e1;
+  --c-text:#0f172a;
+  --c-muted:#64748b;
+  --c-hint:#94a3b8;
+  --gradient:linear-gradient(135deg,#0f2d52 0%,#0b7a75 100%);
+  --shadow-xs:0 1px 2px rgba(0,0,0,.05);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
+  --shadow-lg:0 10px 24px rgba(0,0,0,.1),0 4px 8px rgba(0,0,0,.05);
+  --shadow-xl:0 24px 48px rgba(0,0,0,.14),0 8px 16px rgba(0,0,0,.06);
+  --r4:4px;--r6:6px;--r8:8px;--r10:10px;--r12:12px;--r16:16px;--r24:24px;
+}
+
+/* ── ATOMS ── */
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;font-size:11px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.badge-patient{background:var(--c-green-bg);color:var(--c-green)}
+.badge-doctor{background:var(--c-blue-bg);color:var(--c-blue)}
+.badge-admin{background:var(--c-purple-bg);color:var(--c-purple)}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.tag-cat{background:#f1f5f9;color:var(--c-muted)}
+.tag-pending{background:#fef9c3;color:#854d0e}
+.tag-responded{background:var(--c-green-bg);color:var(--c-green)}
+.tag-published{background:var(--c-blue-bg);color:var(--c-blue)}
+.tag-high{background:var(--c-red-bg);color:var(--c-red)}
+.tag-medium{background:var(--c-amber-bg);color:var(--c-amber)}
+.tag-low{background:#f0fdf4;color:#166534}
+.tag-announcement{background:var(--c-purple-bg);color:var(--c-purple)}
+.tag-awaiting{background:#fef9c3;color:#854d0e}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--r8);border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;transition:.15s;white-space:nowrap}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--c-navy);color:#fff}
+.btn-primary:hover{background:#193f6a}
+.btn-teal{background:var(--c-teal);color:#fff}
+.btn-teal:hover{background:#0a6b66}
+.btn-amber{background:var(--c-amber);color:#fff}
+.btn-amber:hover{background:#c26a06}
+.btn-outline{background:transparent;color:var(--c-muted);border:1px solid var(--c-border2)}
+.btn-outline:hover{background:var(--c-bg)}
+.btn-ghost-white{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
+.btn-ghost-white:hover{background:rgba(255,255,255,.2)}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:var(--r6)}
+.btn-lg{padding:12px 28px;font-size:15px;border-radius:var(--r10)}
+.btn-red-ghost{background:transparent;color:var(--c-red);border:1px solid rgba(153,27,27,.2);font-size:11px;padding:4px 10px;border-radius:var(--r6)}
+.btn-red-ghost:hover{background:var(--c-red-bg)}
+.btn-teal-ghost{background:transparent;color:var(--c-teal);border:1px solid rgba(11,122,117,.2);font-size:11px;padding:4px 10px;border-radius:var(--r6)}
+.btn-teal-ghost:hover{background:var(--c-teal-bg)}
+.inp{width:100%;padding:9px 12px;border:1.5px solid var(--c-border2);border-radius:var(--r8);font-size:13.5px;color:var(--c-text);background:var(--c-surface);outline:none;transition:.15s}
+.inp:focus{border-color:var(--c-teal);box-shadow:0 0 0 3px rgba(11,122,117,.1)}
+.inp::placeholder{color:var(--c-hint)}
+.card{background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r12);box-shadow:var(--shadow-xs)}
+.divider{height:1px;background:var(--c-border);width:100%}
+.section-label{font-size:11px;font-weight:700;color:var(--c-hint);letter-spacing:.08em;text-transform:uppercase}
+
+/* ── LANDING ── */
+.lp{width:100%;min-height:100%;overflow-y:auto;background:var(--c-bg)}
+.lp-nav{height:60px;background:var(--c-navy);display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:50;gap:20px}
+.lp-logo{display:flex;align-items:center;gap:8px;cursor:pointer}
+.lp-logo-icon{width:32px;height:32px;background:var(--c-teal);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.lp-logo-text{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.lp-logo-text span{color:var(--c-teal2)}
+.lp-nav-links{display:flex;gap:8px}
+.lp-nav-link{padding:7px 14px;background:transparent;border:none;color:rgba(255,255,255,.65);font-size:13.5px;cursor:pointer;border-radius:var(--r6);transition:.15s}
+.lp-nav-link:hover{color:#fff;background:rgba(255,255,255,.08)}
+.lp-nav-btns{display:flex;gap:8px}
+
+.hero{background:linear-gradient(140deg,#0a1f3c 0%,#0f2d52 35%,#0b5a58 70%,#0b7a75 100%);padding:88px 40px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 55% 45% at 50% 65%,rgba(77,217,208,.12),transparent)}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(77,217,208,.12);border:1px solid rgba(77,217,208,.3);color:var(--c-teal2);padding:5px 16px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:28px;position:relative}
+.hero h1{font-size:52px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-1.5px;margin-bottom:16px;position:relative}
+.hero h1 em{font-style:normal;color:var(--c-teal2)}
+.hero-desc{color:rgba(255,255,255,.68);font-size:17px;max-width:560px;margin:0 auto 36px;line-height:1.65;position:relative;font-weight:400}
+.hero-cta{display:flex;gap:12px;justify-content:center;margin-bottom:32px;position:relative}
+.hero-trust{display:flex;gap:28px;justify-content:center;position:relative}
+.hero-trust-item{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.5);font-size:12.5px}
+.hero-trust-item::before{content:'';width:14px;height:14px;border:1.5px solid rgba(77,217,208,.5);border-radius:50%;background:rgba(77,217,208,.12);display:flex;flex-shrink:0}
+
+.section{padding:72px 40px}
+.section-header{text-align:center;margin-bottom:52px}
+.section-tag{display:inline-block;background:var(--c-teal-bg);color:var(--c-teal);padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:700;letter-spacing:.05em;margin-bottom:12px}
+.section-h{font-size:36px;font-weight:800;color:var(--c-navy);letter-spacing:-.5px;margin-bottom:12px}
+.section-sub{color:var(--c-muted);font-size:15px;max-width:520px;margin:0 auto;line-height:1.7}
+.section-line{width:40px;height:3px;background:var(--c-teal);border-radius:2px;margin:16px auto 0}
+
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:960px;margin:0 auto}
+.feature-card{background:#fff;border:1px solid var(--c-border);border-radius:var(--r16);padding:28px;transition:.2s}
+.feature-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-3px);border-color:rgba(11,122,117,.2)}
+.feat-icon{width:44px;height:44px;background:var(--c-teal-bg);border-radius:var(--r10);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+
+.steps-section{background:var(--c-navy);padding:72px 40px}
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:960px;margin:0 auto}
+.step-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:var(--r12);padding:28px}
+.step-n{font-size:44px;font-weight:800;color:rgba(77,217,208,.2);letter-spacing:-2px;line-height:1;margin-bottom:12px}
+.step-title{font-size:14.5px;font-weight:700;color:#fff;margin-bottom:8px}
+.step-desc{font-size:13px;color:rgba(255,255,255,.55);line-height:1.7}
+
+.cta-band{background:var(--gradient);padding:72px 40px;text-align:center}
+.cta-h{font-size:36px;font-weight:800;color:#fff;letter-spacing:-.5px;margin-bottom:12px}
+.cta-sub{color:rgba(255,255,255,.68);font-size:15.5px;margin-bottom:36px;max-width:460px;margin-left:auto;margin-right:auto}
+.cta-btns{display:flex;gap:12px;justify-content:center}
+.lp-footer{background:#080f1a;color:rgba(255,255,255,.4);padding:28px 40px;text-align:center;font-size:12.5px}
+.footer-logo{color:#fff;font-weight:800;font-size:16px;margin-bottom:8px}
+.footer-logo span{color:var(--c-teal2)}
+
+/* ── AUTH MODAL ── */
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(3px)}
+.auth-modal{background:#fff;border-radius:var(--r24);width:460px;max-height:92vh;overflow:hidden;box-shadow:var(--shadow-xl)}
+.auth-modal-hdr{background:var(--gradient);padding:28px 28px 0;border-radius:var(--r24) var(--r24) 0 0}
+.auth-modal-brand{display:flex;align-items:center;gap:9px;margin-bottom:20px}
+.auth-modal-brand-icon{width:30px;height:30px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.auth-modal-brand-text{color:#fff;font-size:17px;font-weight:800}
+.auth-modal-brand-text span{color:var(--c-teal2)}
+.auth-close{position:absolute;top:18px;right:18px;width:28px;height:28px;background:rgba(255,255,255,.15);border:none;border-radius:50%;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
+.auth-close:hover{background:rgba(255,255,255,.25)}
+.auth-tabs{display:flex;background:rgba(255,255,255,.1);border-radius:var(--r8);padding:3px;margin-bottom:0}
+.auth-tab{flex:1;padding:8px;text-align:center;border:none;border-radius:6px;cursor:pointer;font-size:13.5px;font-weight:600;transition:.15s;background:transparent}
+.auth-tab.active{background:rgba(255,255,255,.92);color:var(--c-navy)}
+.auth-tab:not(.active){color:rgba(255,255,255,.65)}
+.auth-body{padding:24px 28px}
+.demo-strip{background:var(--c-teal-bg);border:1px solid rgba(11,122,117,.2);border-radius:var(--r10);padding:13px 14px;margin-bottom:20px}
+.demo-label{font-size:10.5px;font-weight:700;color:var(--c-teal);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.demo-pills{display:flex;gap:7px}
+.demo-pill{padding:5px 13px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:700;transition:.15s}
+.demo-pill-admin{background:rgba(91,33,182,.1);color:var(--c-purple);border:1px solid rgba(91,33,182,.2)}
+.demo-pill-admin:hover{background:rgba(91,33,182,.18)}
+.demo-pill-doctor{background:rgba(30,64,175,.1);color:var(--c-blue);border:1px solid rgba(30,64,175,.2)}
+.demo-pill-doctor:hover{background:rgba(30,64,175,.18)}
+.demo-pill-patient{background:rgba(6,95,70,.1);color:var(--c-green);border:1px solid rgba(6,95,70,.2)}
+.demo-pill-patient:hover{background:rgba(6,95,70,.18)}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12.5px;font-weight:600;color:var(--c-navy);display:block;margin-bottom:6px}
+.role-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.role-btn{padding:10px 12px;border-radius:var(--r8);cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+.role-btn-active{border:2px solid var(--c-teal);background:var(--c-teal-bg);color:var(--c-teal)}
+.role-btn-inactive{border:1.5px solid var(--c-border2);background:#fff;color:var(--c-muted)}
+.form-submit{width:100%;padding:11px;background:var(--c-navy);color:#fff;border:none;border-radius:var(--r8);font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;transition:.15s}
+.form-submit:hover{background:#193f6a}
+.form-link{text-align:center;margin-top:14px;font-size:13px;color:var(--c-muted)}
+.form-link-btn{background:none;border:none;color:var(--c-teal);cursor:pointer;font-weight:700;font-size:13px}
+.password-wrap{position:relative}
+.password-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--c-muted)}
+.doctor-warn{background:var(--c-amber-bg);border:1px solid rgba(217,119,6,.25);border-radius:var(--r6);padding:8px 10px;font-size:12px;color:var(--c-amber);margin-top:7px}
+
+/* ── DASHBOARD SHELL ── */
+.dash{display:flex;width:100%;height:100%;overflow:hidden;background:var(--c-bg)}
+.sidebar{width:220px;flex-shrink:0;background:var(--c-navy);display:flex;flex-direction:column;height:100%;overflow:hidden}
+.sb-brand{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-brand-inner{display:flex;align-items:center;gap:8px}
+.sb-user{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sb-user-info{overflow:hidden}
+.sb-user-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.sb-nav{flex:1;padding:10px 8px;overflow-y:auto}
+.sb-link{display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border-radius:var(--r8);border:none;cursor:pointer;font-size:13px;font-weight:600;text-align:left;margin-bottom:2px;transition:.15s;background:transparent}
+.sb-link-active{background:rgba(77,217,208,.14);color:var(--c-teal2)}
+.sb-link-inactive{color:rgba(255,255,255,.5)}
+.sb-link-inactive:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.06)}
+.sb-footer{padding:0 8px 16px}
+.sb-logout{display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border-radius:var(--r8);border:none;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:rgba(255,255,255,.35);transition:.15s}
+.sb-logout:hover{color:rgba(255,255,255,.7);background:rgba(255,255,255,.06)}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid var(--c-border);padding:0 24px;height:56px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.topbar-info{flex:1}
+.topbar-title{font-size:16px;font-weight:700;color:var(--c-navy)}
+.topbar-sub{font-size:11.5px;color:var(--c-hint);margin-top:1px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.bell-btn{width:34px;height:34px;background:transparent;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;transition:.15s}
+.bell-btn:hover{background:var(--c-bg)}
+.bell-badge{position:absolute;top:5px;right:5px;width:8px;height:8px;background:#ef4444;border-radius:50%;border:2px solid #fff}
+.avatar-btn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* ── CASE FEED TOOLBAR ── */
+.feed-toolbar{display:flex;gap:10px;margin-bottom:16px;align-items:center}
+.search-wrap{flex:1;position:relative}
+.search-wrap input{width:100%;padding:9px 14px 9px 36px;border:1.5px solid var(--c-border2);border-radius:var(--r8);font-size:13.5px;background:#fff;color:var(--c-text);outline:none;transition:.15s}
+.search-wrap input:focus{border-color:var(--c-teal);box-shadow:0 0 0 3px rgba(11,122,117,.08)}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--c-hint)}
+.filter-sel{padding:9px 12px;border:1.5px solid var(--c-border2);border-radius:var(--r8);font-size:13px;background:#fff;color:var(--c-muted);cursor:pointer;outline:none;min-width:150px}
+.new-case-btn{display:flex;align-items:center;gap:6px;padding:9px 18px;background:var(--c-navy);color:#fff;border:none;border-radius:var(--r8);cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;transition:.15s}
+.new-case-btn:hover{background:#193f6a}
+
+/* ── BANNER ── */
+.banner{display:flex;align-items:flex-start;gap:10px;padding:11px 16px;border-radius:var(--r10);margin-bottom:16px;font-size:13px}
+.banner-teal{background:#e6f4f3;border:1px solid rgba(11,122,117,.2);color:#0a5754}
+.banner-purple{background:var(--c-purple-bg);border:1px solid rgba(91,33,182,.2);color:#4a1ab6}
+.banner-amber{background:var(--c-amber-bg);border:1px solid rgba(217,119,6,.25);color:#854d0e}
+.banner-icon{flex-shrink:0;margin-top:1px}
+
+/* ── CASE CARD ── */
+.case-card{background:#fff;border:1px solid var(--c-border);border-radius:var(--r12);padding:20px 22px;margin-bottom:12px;transition:.2s;box-shadow:var(--shadow-xs)}
+.case-card:hover{box-shadow:var(--shadow-md);border-color:#c8d5e8}
+.case-hdr{display:flex;gap:11px;margin-bottom:12px}
+.case-meta-top{display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap}
+.case-author{font-size:13.5px;font-weight:700;color:var(--c-navy)}
+.case-time{font-size:11.5px;color:var(--c-hint);margin-left:auto;white-space:nowrap}
+.case-tags{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.case-title{font-size:15.5px;font-weight:700;color:var(--c-navy);margin-bottom:7px;line-height:1.4;cursor:pointer}
+.case-title:hover{color:var(--c-teal)}
+.case-excerpt{font-size:13.5px;color:var(--c-muted);line-height:1.65;margin-bottom:12px}
+.attach-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--c-bg);border:1px solid var(--c-border);border-radius:6px;font-size:12px;color:var(--c-muted);cursor:pointer;margin-bottom:12px}
+.case-footer{display:flex;align-items:center;gap:8px}
+.vote-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border:1.5px solid var(--c-border);border-radius:20px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:var(--c-muted);transition:.15s}
+.vote-btn:hover,.vote-btn.active{border-color:var(--c-teal);color:var(--c-teal);background:var(--c-teal-bg)}
+.vote-btn.dislike:hover,.vote-btn.dislike.active{border-color:var(--c-red);color:var(--c-red);background:var(--c-red-bg)}
+.cmt-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border:1.5px solid var(--c-border);border-radius:20px;background:#fff;cursor:pointer;font-size:12px;color:var(--c-muted);transition:.15s}
+.cmt-btn:hover{border-color:var(--c-border2);color:var(--c-text)}
+.case-admin-actions{margin-left:auto;display:flex;gap:6px}
+.read-full-btn{background:none;border:none;color:var(--c-teal);font-size:13px;font-weight:600;cursor:pointer;padding:5px 0;transition:.15s}
+.read-full-btn:hover{color:#0a6b66}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:64px 24px}
+.empty-icon{width:56px;height:56px;background:#f1f5f9;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.empty-h{font-size:17px;font-weight:700;color:var(--c-navy);margin-bottom:8px}
+.empty-p{font-size:13.5px;color:var(--c-hint);margin-bottom:24px}
+
+/* ── CASE DETAIL DISCUSSION ── */
+.discussion{margin-top:20px;padding-top:20px;border-top:1px solid var(--c-border)}
+.discussion-title{font-size:11px;font-weight:700;color:var(--c-hint);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--c-border)}
+
+.ai-panel{background:linear-gradient(135deg,#1a2460,#0a4d5c);border-radius:var(--r12);overflow:hidden;margin-bottom:14px}
+.ai-panel-hdr{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.ai-badge{width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.ai-panel-title{font-size:13.5px;font-weight:700;color:#fff}
+.ai-panel-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px}
+.ai-instant-badge{margin-left:auto;padding:3px 11px;background:rgba(77,217,208,.2);border:1px solid rgba(77,217,208,.35);border-radius:20px;font-size:11px;color:var(--c-teal2);font-weight:600;cursor:pointer;white-space:nowrap}
+.ai-responses{padding:12px}
+.ai-response{border-radius:var(--r8);padding:12px 14px;margin-bottom:8px;border-left:3px solid}
+.ai-resp-hdr{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.ai-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.ai-name{font-size:12.5px;font-weight:700}
+.ai-by{font-size:11px;color:var(--c-muted)}
+.ai-text{font-size:13px;color:#1e293b;line-height:1.68}
+.ai-disclaimer{background:#fef3c7;border:1px solid rgba(245,158,11,.3);border-radius:var(--r8);padding:10px 14px;display:flex;gap:8px;align-items:flex-start;margin:2px 0 0}
+.ai-disclaimer-text{font-size:12px;color:#92400e;line-height:1.6}
+
+.comment{display:flex;gap:11px;margin-bottom:16px}
+.comment-body{flex:1}
+.comment-meta{display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap}
+.comment-author{font-size:13.5px;font-weight:700;color:var(--c-navy)}
+.comment-specialty{font-size:12px;color:var(--c-muted)}
+.comment-time{font-size:11px;color:var(--c-hint);margin-left:auto}
+.comment-text{font-size:13.5px;color:var(--c-text);line-height:1.7;margin-bottom:8px}
+.comment-actions{display:flex;align-items:center;gap:6px}
+.reply-indent{margin-left:45px;margin-top:10px}
+.reply{background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--r8);border-left:3px solid var(--c-border2);padding:10px 14px;margin-bottom:8px}
+.reply-meta{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.reply-author{font-size:12.5px;font-weight:700;color:var(--c-navy)}
+.reply-time{font-size:11px;color:var(--c-hint);margin-left:auto}
+.reply-text{font-size:13px;color:var(--c-text);line-height:1.6}
+.comment-input-area{display:flex;gap:11px;margin-top:18px;padding-top:18px;border-top:1px solid var(--c-border)}
+.comment-textarea{width:100%;padding:10px 12px;border:1.5px solid var(--c-border2);border-radius:var(--r8);font-size:13.5px;resize:none;min-height:80px;color:var(--c-text);outline:none;transition:.15s}
+.comment-textarea:focus{border-color:var(--c-teal);box-shadow:0 0 0 3px rgba(11,122,117,.08)}
+.post-btn{padding:9px 18px;background:var(--c-teal);color:#fff;border:none;border-radius:var(--r8);cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;align-self:flex-end;transition:.15s;white-space:nowrap}
+.post-btn:hover{background:#0a6b66}
+
+/* ── SUBMIT MODAL ── */
+.submit-modal{background:#fff;border-radius:var(--r24);width:540px;max-height:88vh;overflow:hidden;box-shadow:var(--shadow-xl);display:flex;flex-direction:column}
+.submit-modal-hdr{padding:22px 28px 18px;border-bottom:1px solid var(--c-border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.submit-modal-title{font-size:17px;font-weight:700;color:var(--c-navy)}
+.modal-x{width:28px;height:28px;background:var(--c-bg);border:none;border-radius:50%;cursor:pointer;color:var(--c-muted);display:flex;align-items:center;justify-content:center;font-size:14px;transition:.15s}
+.modal-x:hover{background:var(--c-border);color:var(--c-text)}
+.submit-modal-body{padding:20px 28px;overflow-y:auto;flex:1}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.upload-zone{border:2px dashed var(--c-border2);border-radius:var(--r10);padding:28px;text-align:center;cursor:pointer;transition:.2s}
+.upload-zone:hover{border-color:var(--c-teal);background:var(--c-teal-bg)}
+.upload-zone p{font-size:13.5px;font-weight:600;color:var(--c-text);margin-bottom:4px}
+.upload-zone small{font-size:12px;color:var(--c-hint)}
+.file-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--r8);margin-top:10px}
+.file-thumb{width:30px;height:30px;background:var(--c-border);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.file-info{flex:1;overflow:hidden}
+.file-name{font-size:13px;font-weight:600;color:var(--c-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-size{font-size:11.5px;color:var(--c-hint)}
+.file-remove{background:none;border:none;cursor:pointer;color:var(--c-hint);display:flex;align-items:center;transition:.15s}
+.file-remove:hover{color:var(--c-red)}
+.submit-modal-ftr{padding:14px 28px;border-top:1px solid var(--c-border);display:flex;justify-content:flex-end;gap:9px;flex-shrink:0}
+
+/* ── NOTIFICATIONS ── */
+.notif-panel{position:absolute;top:calc(100% + 8px);right:0;width:340px;background:#fff;border:1px solid var(--c-border);border-radius:var(--r12);box-shadow:var(--shadow-lg);z-index:200;overflow:hidden}
+.notif-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--c-border)}
+.notif-hdr-title{font-size:14px;font-weight:700;color:var(--c-navy)}
+.notif-mark-all{font-size:12px;color:var(--c-teal);background:none;border:none;cursor:pointer;font-weight:600}
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid var(--c-border);cursor:pointer;transition:.15s}
+.notif-item:last-child{border-bottom:none}
+.notif-item:hover{background:var(--c-bg)}
+.notif-icon{width:32px;height:32px;background:var(--c-teal-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif-content p{font-size:13px;color:var(--c-text);line-height:1.4;margin-bottom:3px}
+.notif-content small{font-size:11px;color:var(--c-hint)}
+.notif-case{font-size:11.5px;color:var(--c-teal);margin-top:2px}
+.notif-unread-dot{width:7px;height:7px;background:#3b82f6;border-radius:50%;flex-shrink:0;margin-top:5px}
+
+/* ── PROFILE ── */
+.profile-hdr-card{background:var(--gradient);border-radius:var(--r16);padding:32px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
+.profile-hdr-card::after{content:'';position:absolute;bottom:-20px;right:-20px;width:140px;height:140px;background:rgba(255,255,255,.06);border-radius:50%}
+.profile-av{width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;margin-bottom:14px;position:relative}
+.profile-name{font-size:22px;font-weight:800;margin-bottom:3px}
+.profile-sub{font-size:14px;color:rgba(255,255,255,.65)}
+.profile-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px;position:relative;z-index:1}
+.profile-info-item label{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px;display:block}
+.profile-info-item p{font-size:14px;color:#fff;font-weight:500}
+
+/* ── ADMIN PANEL ── */
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.admin-stat{background:#fff;border:1px solid var(--c-border);border-radius:var(--r12);padding:20px;box-shadow:var(--shadow-xs)}
+.admin-stat-n{font-size:30px;font-weight:800;color:var(--c-navy);letter-spacing:-1px;line-height:1}
+.admin-stat-label{font-size:12px;color:var(--c-hint);margin-top:5px}
+.admin-stat-change{font-size:11.5px;font-weight:600;margin-top:7px}
+.change-up{color:#16a34a}
+.change-warn{color:var(--c-amber)}
+
+/* ── USERS TABLE ── */
+.users-table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--r12);overflow:hidden;border:1px solid var(--c-border);box-shadow:var(--shadow-xs)}
+.users-table th{padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--c-hint);letter-spacing:.07em;text-transform:uppercase;background:#f8fafc;border-bottom:1px solid var(--c-border)}
+.users-table td{padding:13px 16px;font-size:13.5px;color:var(--c-text);border-bottom:1px solid var(--c-border)}
+.users-table tr:last-child td{border-bottom:none}
+.users-table tr:hover td{background:#fafbfd}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:5px}
+
+/* ── ACTIVITY ── */
+.activity-timeline{position:relative}
+.activity-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--c-border)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:8px;height:8px;border-radius:50%;background:var(--c-teal);margin-top:5px;flex-shrink:0}
+.activity-txt{font-size:13.5px;color:var(--c-text);line-height:1.55}
+.activity-time{font-size:11.5px;color:var(--c-hint);margin-top:3px}
+
+/* ── ABOUT / CONTACT PAGE ── */
+.about-hero{background:var(--gradient);padding:72px 40px;text-align:center;color:#fff}
+.about-hero h1{font-size:44px;font-weight:800;letter-spacing:-1px;margin-bottom:14px}
+.about-section{padding:60px 40px;max-width:760px;margin:0 auto}
+
+/* Back button */
+.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:rgba(255,255,255,.65);font-size:13.5px;cursor:pointer;padding:6px 0;transition:.15s}
+.back-btn:hover{color:#fff}
+.back-btn-dark{color:var(--c-muted)}
+.back-btn-dark:hover{color:var(--c-text)}
+
+/* Health status */
+.health-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.health-item{background:var(--c-bg);border-radius:var(--r8);padding:14px;text-align:center}
+.health-label{font-size:11.5px;color:var(--c-hint);margin-bottom:6px}
+.health-val{font-size:14px;font-weight:700}
+.h-green{color:#16a34a}
+.h-amber{color:var(--c-amber)}
+
+/* Fade animation */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .28s ease}
+</style>
+</head>
+<body>
+<div id="viewer">
+  <div id="toolbar">
+    <div class="tb-brand">
+      <div class="tb-brand-dot"></div>
+      <span>MediSecond</span>
+      <span style="color:#555;margin:0 2px">—</span>
+      <span class="tb-screen-name" id="screen-label">Landing Page</span>
+    </div>
+    <div class="tb-dots" id="dot-nav"></div>
+    <div class="tb-nav">
+      <button class="tb-nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>&#8592;</button>
+      <span class="tb-counter" id="counter">1 / 1</span>
+      <button class="tb-nav-btn" id="btn-next" onclick="navigate(1)">&#8594;</button>
+      <span class="tb-zoom" id="zoom-label">100%</span>
+    </div>
+  </div>
+  <div id="canvas"></div>
+</div>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ─── SVG ICONS ─── */
+const Ico = ({sz=16,c="currentColor",children}) => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,display:"inline-block"}}>{children}</svg>
+);
+const IcoShield    = p=><Ico {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Ico>;
+const IcoLock      = p=><Ico {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></Ico>;
+const IcoGlobe     = p=><Ico {...p}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></Ico>;
+const IcoZap       = p=><Ico {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Ico>;
+const IcoAward     = p=><Ico {...p}><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></Ico>;
+const IcoBook      = p=><Ico {...p}><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></Ico>;
+const IcoUsers     = p=><Ico {...p}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></Ico>;
+const IcoUser      = p=><Ico {...p}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></Ico>;
+const IcoFile      = p=><Ico {...p}><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></Ico>;
+const IcoMsg       = p=><Ico {...p}><path d="m3 21 1.9-5.7a8.5 8.5 0 113.8 3.8z"/></Ico>;
+const IcoStar      = p=><Ico {...p} style={{fill:"#f59e0b",stroke:"none"}}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Ico>;
+const IcoUpload    = p=><Ico {...p}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Ico>;
+const IcoX         = p=><Ico {...p}><path d="M18 6L6 18"/><path d="m6 6 12 12"/></Ico>;
+const IcoSend      = p=><Ico {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Ico>;
+const IcoEdit      = p=><Ico {...p}><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5Z"/></Ico>;
+const IcoTrash     = p=><Ico {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></Ico>;
+const IcoEye       = p=><Ico {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></Ico>;
+const IcoCheck     = p=><Ico {...p}><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="m9 11 3 3L22 4"/></Ico>;
+const IcoArrow     = p=><Ico {...p}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></Ico>;
+const IcoBell      = p=><Ico {...p}><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/></Ico>;
+const IcoLogout    = p=><Ico {...p}><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></Ico>;
+const IcoPlus      = p=><Ico {...p}><path d="M5 12h14"/><path d="M12 5v14"/></Ico>;
+const IcoSearch    = p=><Ico {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Ico>;
+const IcoActivity  = p=><Ico {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></Ico>;
+const IcoAlert     = p=><Ico {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></Ico>;
+const IcoHeart     = p=><Ico {...p}><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></Ico>;
+const IcoClip      = p=><Ico {...p}><path d="m21.44 11.05-9.19 9.19a6 6 0 01-8.49-8.49l8.57-8.57A4 4 0 1118 8.84l-8.59 8.57a2 2 0 01-2.83-2.83l8.49-8.48"/></Ico>;
+const IcoSettings  = p=><Ico {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></Ico>;
+
+/* ─── SEED DATA ─── */
+const SEED_USERS = [
+  {id:"u-admin",name:"Dr. Sarah Chen",email:"admin@medisecond.ai",password:"Admin@123",role:"admin",avatar:"SC",specialty:"Platform Administrator",hospital:"MediSecond HQ",joinDate:"2023-01-10",bio:"I oversee clinical quality and platform integrity at MediSecond."},
+  {id:"u-doc1",name:"Dr. James Wilson",email:"dr.wilson@medisecond.ai",password:"Doctor@123",role:"doctor",avatar:"JW",specialty:"Cardiology",hospital:"City Heart Institute",joinDate:"2023-03-05",bio:"Interventional cardiologist with 18 years of clinical experience."},
+  {id:"u-doc2",name:"Dr. Priya Patel",email:"dr.patel@medisecond.ai",password:"Doctor@123",role:"doctor",avatar:"PP",specialty:"Neurology",hospital:"Dhaka Medical College",joinDate:"2023-04-20",bio:"Specialising in stroke rehabilitation and epilepsy management."},
+  {id:"u-pat1",name:"Mohammed Al-Rashid",email:"patient@medisecond.ai",password:"Patient@123",role:"patient",avatar:"MA",joinDate:"2023-07-14",bio:"Looking for clarity on my recent cardiac diagnosis."},
+  {id:"u-pat2",name:"Lisa Thompson",email:"lisa@medisecond.ai",password:"Patient@123",role:"patient",avatar:"LT",joinDate:"2023-09-02",bio:"Seeking a second opinion after my recent MRI results."},
+];
+const AI_ASSISTANTS = [
+  {emoji:"🟢",name:"ChatGPT",brand:"OpenAI",color:"#10a37f",bg:"#f0fdf9",border:"rgba(16,163,127,.25)"},
+  {emoji:"🟠",name:"Claude",brand:"Anthropic",color:"#d97706",bg:"#fffbeb",border:"rgba(217,119,6,.25)"},
+  {emoji:"🔵",name:"Gemini",brand:"Google DeepMind",color:"#1a73e8",bg:"#eff6ff",border:"rgba(26,115,232,.25)"},
+  {emoji:"🟣",name:"Copilot",brand:"Microsoft",color:"#7c3aed",bg:"#f5f3ff",border:"rgba(124,58,237,.25)"},
+  {emoji:"⚡",name:"Perplexity",brand:"Perplexity AI",color:"#0891b2",bg:"#ecfeff",border:"rgba(8,145,178,.25)"},
+];
+
+const makeAIComment = (post) => {
+  const CAT = {
+    Cardiology:{adj:"cardiological",flag:"chest pain, syncope, or severe dyspnoea",focus:"symptom onset, duration, severity, and prior investigations"},
+    Neurology:{adj:"neurological",flag:"sudden weakness, vision loss, or altered consciousness",focus:"timeline of symptoms, progression, and prior MRI findings"},
+    "General Medicine":{adj:"clinical",flag:"high fever, altered consciousness, or unexplained weight loss",focus:"symptom onset, duration, associated features, and baseline investigations"},
+    Announcement:{adj:"clinical",flag:"any urgent or time-sensitive elements",focus:"clarity and completeness of the information presented"},
+    Other:{adj:"medical",flag:"any red-flag or urgent symptoms",focus:"complete symptom history, investigations, and clinical timeline"},
+  };
+  const ctx = CAT[post.category]||CAT.Other;
+  const snip = post.content.slice(0,80)+"…";
+  const texts = [
+    `Based on the ${ctx.adj} presentation described ("${snip}"), this case warrants careful specialist evaluation. I would focus on ${ctx.focus}. If you experience ${ctx.flag}, seek emergency care immediately.`,
+    `Reading through your case, the ${ctx.adj} details you have shared provide a reasonable clinical picture. Key considerations include ${ctx.focus}. I would strongly recommend bringing all relevant investigation reports to your follow-up appointment.`,
+    `This ${post.category} presentation raises several important clinical differentials. Prioritising ${ctx.focus} will help narrow the diagnosis. Watch carefully for ${ctx.flag} — these would require prompt escalation.`,
+    `I understand your concern about this ${ctx.adj} situation. My recommendation is to ensure your specialist has complete documentation covering ${ctx.focus}. Maintaining a symptom diary between appointments can also provide valuable clinical context.`,
+    `Synthesising current clinical literature on this ${post.category} presentation: the information you have provided — particularly around ${ctx.focus} — is consistent with several documented clinical pathways. A structured specialist assessment remains the most reliable next step.`,
+  ];
+  return {id:"c-ai-"+Date.now(),authorId:"ai",authorName:"MediSecond AI",role:"ai",specialty:"AI Pre-Screening",aiTexts:texts,createdAt:new Date().toISOString(),likes:[],dislikes:[],replies:[]};
+};
+
+const SEED_POSTS = [
+  {
+    id:"p-1",authorId:"u-pat1",authorName:"Mohammed Al-Rashid",
+    title:"Need a Second Opinion on Mild Aortic Stenosis Diagnosis",
+    content:"I was recently told by my local cardiologist that I have mild aortic stenosis. My echocardiogram showed a valve area of 1.8 cm² with a mean gradient of 18 mmHg. I am 52 years old, mildly symptomatic (occasional breathlessness during stair climbing), and otherwise healthy. My doctor suggested a watch-and-wait approach with annual echo follow-ups. I want to know whether this plan is appropriate or if I should be considering intervention sooner.",
+    category:"Cardiology",status:"responded",priority:"medium",
+    createdAt:"2024-02-10T09:15:00",attachments:[],likes:["u-doc1","u-admin"],dislikes:[],
+    comments:[
+      {id:"c-1",authorId:"u-doc1",authorName:"Dr. James Wilson",role:"doctor",specialty:"Cardiology",
+       content:"Thank you for sharing your case details. Your echocardiographic findings are indeed consistent with mild aortic stenosis — a valve area above 1.5 cm² typically falls into this category. The watchful-waiting strategy your cardiologist proposed is well-aligned with current ACC/AHA guidelines for mild, minimally symptomatic AS. I would recommend sticking with annual echocardiography and a cardiology review every six to twelve months. If your symptoms progress — particularly exertional chest pain, syncope, or significant dyspnoea — please seek evaluation promptly.",
+       createdAt:"2024-02-10T14:30:00",likes:["u-pat1","u-admin"],dislikes:[],
+       replies:[{id:"r-1",authorId:"u-pat1",authorName:"Mohammed Al-Rashid",role:"patient",content:"Thank you Dr. Wilson! Should I be worried about exercising? I used to jog regularly.",createdAt:"2024-02-10T16:00:00",likes:[],dislikes:[]}]},
+      {id:"c-2",authorId:"u-admin",authorName:"Dr. Sarah Chen",role:"admin",specialty:"Platform Administrator",
+       content:"I have reviewed this case from a platform quality standpoint. Dr. Wilson's guidance is clinically sound. If you have any uploaded reports or imaging files you would like our panel to review, please attach them to this post.",
+       createdAt:"2024-02-11T08:00:00",likes:["u-pat1"],dislikes:[],replies:[]},
+    ],
+  },
+  {
+    id:"p-2",authorId:"u-pat2",authorName:"Lisa Thompson",
+    title:"Uncertain About MRI Finding — Possible MS Diagnosis",
+    content:"My neurologist showed me an MRI of my brain that revealed two small white-matter lesions. She mentioned the possibility of early multiple sclerosis, but said the imaging alone is not conclusive. I have had two episodes of numbness in my left arm over the past year, each lasting about a week. I am 34 years old and otherwise in good health. A lumbar puncture has been suggested to check for oligoclonal bands. I am anxious and would really appreciate a second opinion before agreeing to the procedure.",
+    category:"Neurology",status:"responded",priority:"high",
+    createdAt:"2024-02-14T16:45:00",attachments:[],likes:["u-doc2"],dislikes:[],
+    comments:[
+      {id:"c-3",authorId:"u-doc2",authorName:"Dr. Priya Patel",role:"doctor",specialty:"Neurology",
+       content:"I understand how distressing this uncertainty must feel. Your clinical picture — two distinct episodes of sensory symptoms separated in time, combined with two white-matter lesions on MRI — does raise a genuine concern about demyelinating disease. The lumbar puncture your neurologist has recommended is a reasonable next step; oligoclonal bands are present in roughly 85–95% of MS patients and help distinguish it from other conditions. I would also suggest requesting a spine MRI and visual evoked potential test if not already done.",
+       createdAt:"2024-02-15T10:20:00",likes:["u-pat2"],dislikes:[],replies:[]},
+    ],
+  },
+  {
+    id:"p-3",authorId:"u-admin",authorName:"Dr. Sarah Chen",
+    title:"Platform Announcement: New Radiology Review Panel Added",
+    content:"I am pleased to announce that MediSecond has expanded its specialist panel to include four board-certified radiologists. Patients and referring physicians can now request structured radiology second opinions on CT, MRI, X-ray, and PET scan reports. Upload your DICOM-exported JPEG images or the written radiology report as a PDF when submitting your case. Our radiologists aim to respond within 48 hours.",
+    category:"Announcement",status:"published",priority:"low",
+    createdAt:"2024-02-16T08:00:00",attachments:[],likes:["u-doc1","u-doc2","u-pat1"],dislikes:[],comments:[],
+  },
+];
+const SEED_NOTIFS = [
+  {id:"n-1",forUserId:"u-pat1",type:"comment",message:"Dr. James Wilson responded to your case",postTitle:"Need a Second Opinion on Mild Aortic Stenosis Diagnosis",postId:"p-1",isRead:false,createdAt:"2024-02-10T14:30:00"},
+  {id:"n-2",forUserId:"u-pat1",type:"comment",message:"Dr. Sarah Chen also commented on your case",postTitle:"Need a Second Opinion on Mild Aortic Stenosis Diagnosis",postId:"p-1",isRead:false,createdAt:"2024-02-11T08:00:00"},
+  {id:"n-3",forUserId:"u-doc1",type:"new_post",message:"New patient case submitted in Neurology",postTitle:"Uncertain About MRI Finding — Possible MS Diagnosis",postId:"p-2",isRead:false,createdAt:"2024-02-14T16:45:00"},
+];
+
+const fmtDate = iso => {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})+" · "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+};
+
+/* ─── ATOMS ─── */
+const Avatar = ({initials,size=36,bg="#0b7a75"}) => (
+  <div className="avatar" style={{width:size,height:size,background:bg,fontSize:size*0.32}}>{initials}</div>
+);
+const RoleBadge = ({role}) => (
+  <span className={`badge badge-${role}`}>{role.toUpperCase()}</span>
+);
+const StatusTag = ({status}) => {
+  const map = {responded:"tag-responded",pending:"tag-awaiting",published:"tag-published",awaiting:"tag-awaiting"};
+  const labels = {responded:"Responded",pending:"Awaiting Review",published:"Published",awaiting:"Awaiting Review"};
+  return <span className={`tag ${map[status]||"tag-awaiting"}`}>{labels[status]||status}</span>;
+};
+const PriorityTag = ({priority}) => {
+  const map = {high:"tag-high",medium:"tag-medium",low:"tag-low"};
+  return <span className={`tag ${map[priority]}`}>{priority.charAt(0).toUpperCase()+priority.slice(1)} Priority</span>;
+};
+const CatTag = ({cat}) => (
+  <span className={`tag ${cat==="Announcement"?"tag-announcement":"tag-cat"}`}>{cat}</span>
+);
+const avatarBg = (role) => role==="admin"?"#5b21b6":role==="doctor"?"#0f2d52":role==="patient"?"#0b7a75":"#888";
+
+/* ─── LANDING PAGE ─── */
+function LandingPage({onLogin,onRegister,onAbout,onContact}) {
+  const features = [
+    {icon:<IcoCheck sz={20} c="#0b7a75"/>,title:"Clinically Verified Opinions",desc:"Every response will come from board-certified specialists with verified credentials and hospital affiliations."},
+    {icon:<IcoLock sz={20} c="#0b7a75"/>,title:"End-to-End Privacy",desc:"Your case is never visible to other patients. Only assigned doctors and administrators can access your records."},
+    {icon:<IcoGlobe sz={20} c="#0b7a75"/>,title:"Bridging the Access Gap",desc:"Designed for developing healthcare infrastructures where specialist access is limited or geographically constrained."},
+    {icon:<IcoZap sz={20} c="#0b7a75"/>,title:"AI-Assisted Triage",desc:"Our AI engine will analyse incoming cases, route them to the most relevant specialist, and flag urgent situations."},
+    {icon:<IcoBook sz={20} c="#0b7a75"/>,title:"Evidence-Based Guidance",desc:"All opinions will be grounded in peer-reviewed clinical guidelines and referenced literature."},
+    {icon:<IcoAward sz={20} c="#0b7a75"/>,title:"Accredited Specialists",desc:"Our network will recruit cardiologists, neurologists, oncologists, radiologists, and more across many countries."},
+  ];
+
+  return (
+    <div className="lp" style={{width:"100%",height:"100%",overflowY:"auto"}}>
+      <nav className="lp-nav">
+        <div className="lp-logo">
+          <div className="lp-logo-icon"><IcoHeart sz={16} c="#fff"/></div>
+          <div className="lp-logo-text">Medi<span>Second</span></div>
+        </div>
+        <div className="lp-nav-links">
+          <button className="lp-nav-link" onClick={onAbout}>About Us</button>
+          <button className="lp-nav-link" onClick={onContact}>Contact Us</button>
+        </div>
+        <div className="lp-nav-btns">
+          <button className="btn btn-ghost-white btn-sm" onClick={onLogin}>Log In</button>
+          <button className="btn btn-amber btn-sm" onClick={onRegister}>Get Started</button>
+        </div>
+      </nav>
+
+      <div className="hero">
+        <div className="hero-badge"><IcoZap sz={12} c="currentColor"/> AI-Driven Clinical Decision Support</div>
+        <h1>A Second Medical Opinion,<br/><em>When It Matters Most</em></h1>
+        <p className="hero-desc">MediSecond connects patients in under-resourced healthcare environments with board-certified specialists worldwide — delivering evidence-based second opinions securely and swiftly.</p>
+        <p style={{ color:"white", fontSize:18, lineHeight:1.7, marginTop:50, marginBottom:75, letterSpacing:"0.05em" }}>
+          <span style={{ color:"#4DD9D0", fontFamily:"'DM Serif Display',serif", fontSize:"clamp(25px,2vw,20px)", lineHeight:2.7 }}>Frontend Developer:</span> <br/> Nur Akib Al Muid (2120272).<br/> CSE 309 Section 4. <br/> Instructor: Sajib Bin Mamun. <br/> Computer Science and Engineering. <br/> Independent University, Bangladesh.<br/>
+        </p>
+        <div className="hero-cta">
+          <button className="btn btn-amber btn-lg" onClick={onRegister}>Submit Your Case <IcoArrow sz={15} c="#fff"/></button>
+          <button className="btn btn-ghost-white btn-lg" onClick={onRegister}>I Am a Specialist</button>
+        </div>
+        <div className="hero-trust">
+          {["HIPAA-Aware Design","ISO 27001 Aligned","256-bit Encryption"].map(t=>(
+            <div key={t} className="hero-trust-item">{t}</div>
+          ))}
+        </div>
+      </div>
+
+      <div className="section" style={{background:"#fff"}}>
+        <div className="section-header">
+          <div className="section-tag">WHY MEDISECOND</div>
+          <h2 className="section-h">Built for those who need it most</h2>
+          <div className="section-line"></div>
+          <p className="section-sub" style={{marginTop:12}}>I built this platform because geographical and economic barriers should never prevent anyone from accessing quality medical guidance.</p>
+        </div>
+        <div className="features-grid">
+          {features.map(f=>(
+            <div key={f.title} className="feature-card">
+              <div className="feat-icon">{f.icon}</div>
+              <h4 style={{fontSize:15,fontWeight:700,color:"var(--c-navy)",marginBottom:8}}>{f.title}</h4>
+              <p style={{fontSize:13.5,color:"var(--c-muted)",lineHeight:1.65}}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="steps-section">
+        <div className="section-header">
+          <h2 className="section-h" style={{color:"#fff"}}>Four Steps to Clarity</h2>
+          <p style={{color:"rgba(255,255,255,.6)",fontSize:15,maxWidth:500,margin:"10px auto 0"}}>From registration to receiving your specialist opinion — the entire process takes minutes, not months.</p>
+        </div>
+        <div className="steps-grid">
+          {[["01","Create Your Account","Register as a patient in under two minutes. No referral required."],
+            ["02","Submit Your Case","Describe your situation, attach reports, and select a specialty."],
+            ["03","Expert Review","A matched specialist reviews your case and posts a structured clinical opinion."],
+            ["04","Informed Decision","Read the opinion, ask follow-up questions, and return to your care team with confidence."]
+          ].map(([n,t,d])=>(
+            <div key={n} className="step-card">
+              <div className="step-n">{n}</div>
+              <div className="step-title">{t}</div>
+              <div className="step-desc">{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="cta-band">
+        <h2 className="cta-h">Ready to Get a Second Opinion?</h2>
+        <p className="cta-sub">Join here to get better-informed decisions with the help of MediSecond.</p>
+        <div className="cta-btns">
+          <button className="btn btn-amber btn-lg" onClick={onRegister}>Create Free Account</button>
+          <button className="btn btn-ghost-white btn-lg" onClick={onLogin}>Log In</button>
+        </div>
+      </div>
+
+      <div className="lp-footer">
+        <div className="footer-logo">Medi<span>Second</span></div>
+        <p>© 2024 MediSecond — An AI-Driven Medical Second Opinion System.</p>
+        <p style={{marginTop:4}}>Designed for developing healthcare infrastructures. Not a substitute for in-person medical care.</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── AUTH MODAL ─── */
+function AuthModal({mode,onClose,onAuth,users,setUsers}) {
+  const [tab,setTab] = useState(mode);
+  const [form,setForm] = useState({name:"",email:"",password:"",role:"patient",specialty:"",hospital:""});
+  const [err,setErr] = useState("");
+  const [showPwd,setShowPwd] = useState(false);
+
+  const handleLogin = () => {
+    setErr("");
+    const u = users.find(x=>x.email===form.email&&x.password===form.password);
+    if(!u){setErr("Incorrect email or password.");return;}
+    onAuth(u);
+  };
+  const handleRegister = () => {
+    setErr("");
+    if(!form.name.trim()){setErr("Please enter your full name.");return;}
+    if(!form.email.trim()){setErr("Please enter your email address.");return;}
+    if(form.password.length<8){setErr("Password must be at least 8 characters.");return;}
+    if(users.find(x=>x.email===form.email)){setErr("An account with this email already exists.");return;}
+    const nu = {id:"u-"+Date.now(),name:form.name,email:form.email,password:form.password,role:form.role,avatar:form.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),specialty:form.specialty||"—",hospital:form.hospital||"—",joinDate:new Date().toISOString().split("T")[0],bio:""};
+    setUsers(prev=>[...prev,nu]);
+    onAuth(nu);
+  };
+  const fillDemo = (email,password) => { setTab("login"); setForm(f=>({...f,email,password})); setErr(""); };
+
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="auth-modal" style={{position:"relative"}}>
+        <div className="auth-modal-hdr">
+          <div style={{position:"relative"}}>
+            <button className="auth-close" onClick={onClose}><IcoX sz={13} c="#fff"/></button>
+            <div className="auth-modal-brand">
+              <div className="auth-modal-brand-icon"><IcoHeart sz={15} c="#fff"/></div>
+              <div className="auth-modal-brand-text">Medi<span>Second</span></div>
+            </div>
+            <div className="auth-tabs">
+              {["login","register"].map(t=>(
+                <button key={t} className={`auth-tab ${tab===t?"active":""}`} onClick={()=>{setTab(t);setErr("");}}>
+                  {t==="login"?"Log In":"Register"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="auth-body">
+          <div className="demo-strip">
+            <div className="demo-label">Quick Demo — Click to Fill Credentials</div>
+            <div className="demo-pills">
+              <button className="demo-pill demo-pill-admin" onClick={()=>fillDemo("admin@medisecond.ai","Admin@123")}>Admin</button>
+              <button className="demo-pill demo-pill-doctor" onClick={()=>fillDemo("dr.wilson@medisecond.ai","Doctor@123")}>Doctor</button>
+              <button className="demo-pill demo-pill-patient" onClick={()=>fillDemo("patient@medisecond.ai","Patient@123")}>Patient</button>
+            </div>
+          </div>
+
+          {err && <div style={{background:"#fee2e2",border:"1px solid rgba(153,27,27,.2)",borderRadius:8,padding:"9px 13px",marginBottom:14,fontSize:13,color:"#991b1b",display:"flex",alignItems:"center",gap:7}}><IcoAlert sz={13} c="#991b1b"/>{err}</div>}
+
+          {tab==="login" ? (
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">Email Address</label>
+                <input className="inp" type="email" placeholder="you@example.com" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+              </div>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">Password</label>
+                <div className="password-wrap">
+                  <input className="inp" type={showPwd?"text":"password"} placeholder="••••••••" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+                  <button className="password-toggle" onClick={()=>setShowPwd(!showPwd)}><IcoEye sz={14} c="var(--c-muted)"/></button>
+                </div>
+              </div>
+              <button className="form-submit" onClick={handleLogin}>Log In to My Account</button>
+              <p className="form-link">No account yet? <button className="form-link-btn" onClick={()=>setTab("register")}>Register here</button></p>
+            </div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",gap:13}}>
+              <div>
+                <label className="form-label">I am registering as a</label>
+                <div className="role-toggle">
+                  {[{v:"patient",l:"Patient",i:<IcoUser sz={13} c="currentColor"/>},{v:"doctor",l:"Doctor",i:<IcoHeart sz={13} c="currentColor"/>}].map(r=>(
+                    <button key={r.v} className={`role-btn ${form.role===r.v?"role-btn-active":"role-btn-inactive"}`} onClick={()=>setForm(f=>({...f,role:r.v}))}>
+                      {r.i} {r.l}
+                    </button>
+                  ))}
+                </div>
+                {form.role==="doctor"&&<div className="doctor-warn">⚠ Doctor accounts require admin verification after registration.</div>}
+              </div>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">Full Name</label>
+                <input className="inp" placeholder={form.role==="doctor"?"Dr. First Last":"First Last"} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+              </div>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">Email Address</label>
+                <input className="inp" type="email" placeholder="you@email.com" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+              </div>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">Password</label>
+                <div className="password-wrap">
+                  <input className="inp" type={showPwd?"text":"password"} placeholder="Min. 8 characters" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))}/>
+                  <button className="password-toggle" onClick={()=>setShowPwd(!showPwd)}><IcoEye sz={14} c="var(--c-muted)"/></button>
+                </div>
+              </div>
+              <button className="form-submit" onClick={handleRegister}>Create My Account</button>
+              <p className="form-link">Already have an account? <button className="form-link-btn" onClick={()=>setTab("login")}>Log in</button></p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── SUBMIT CASE MODAL ─── */
+function SubmitModal({onClose,onSubmit,existing}) {
+  const [title,setTitle] = useState(existing?.title||"");
+  const [content,setContent] = useState(existing?.content||"");
+  const [category,setCategory] = useState(existing?.category||"General Medicine");
+  const [priority,setPriority] = useState(existing?.priority||"medium");
+  const [hasFile,setHasFile] = useState(false);
+
+  const handleSave = () => {
+    if(!title.trim()||!content.trim()) return;
+    onSubmit({title,content,category,priority});
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="submit-modal">
+        <div className="submit-modal-hdr">
+          <span className="submit-modal-title">{existing?"Edit Case":"Submit a New Case"}</span>
+          <button className="modal-x" onClick={onClose}><IcoX sz={14} c="currentColor"/></button>
+        </div>
+        <div className="submit-modal-body" style={{display:"flex",flexDirection:"column",gap:16}}>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label className="form-label">Case Title <span style={{color:"var(--c-red)"}}>*</span></label>
+            <input className="inp" placeholder="e.g. Persistent chest pain after exercise" value={title} onChange={e=>setTitle(e.target.value)}/>
+          </div>
+          <div className="form-row">
+            <div>
+              <label className="form-label">Specialty / Category</label>
+              <select className="inp" value={category} onChange={e=>setCategory(e.target.value)} style={{cursor:"pointer"}}>
+                {["General Medicine","Cardiology","Neurology","Radiology","Oncology","Endocrinology","Gastroenterology","Psychiatry","Other"].map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="form-label">Priority</label>
+              <select className="inp" value={priority} onChange={e=>setPriority(e.target.value)} style={{cursor:"pointer"}}>
+                {["low","medium","high"].map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="form-label">Case Description <span style={{color:"var(--c-red)"}}>*</span></label>
+            <textarea className="inp" rows={5} style={{resize:"vertical",minHeight:110}} placeholder="Describe your symptoms, history, current medications, and what you are seeking a second opinion on…" value={content} onChange={e=>setContent(e.target.value)}/>
+          </div>
+          <div>
+            <label className="form-label">Attachments <span style={{fontSize:12,fontWeight:400,color:"var(--c-hint)"}}>(PDF or JPEG/JPG, max 25 MB each)</span></label>
+            <div className="upload-zone" onClick={()=>setHasFile(true)}>
+              <div style={{color:"var(--c-teal)",marginBottom:8}}><IcoUpload sz={24} c="var(--c-teal)"/></div>
+              <p>Drag & drop files here, or click to browse</p>
+              <small>PDF, JPEG, JPG • Max 25 MB per file</small>
+            </div>
+            {hasFile && (
+              <div className="file-item">
+                <div className="file-thumb" style={{background:"#f0fdf9"}}><IcoClip sz={14} c="var(--c-teal)"/></div>
+                <div className="file-info">
+                  <div className="file-name">medical_report_2024.jpg</div>
+                  <div className="file-size">112.8 KB · JPEG Image</div>
+                </div>
+                <button className="file-remove" onClick={()=>setHasFile(false)}><IcoX sz={13} c="currentColor"/></button>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="submit-modal-ftr">
+          <button className="btn btn-outline" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSave}><IcoSend sz={13} c="#fff"/> {existing?"Save Changes":"Submit Case"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── AI PANEL ─── */
+function AIPanelComment({comment,canDelete,onDelete}) {
+  const texts = comment.aiTexts || Array(5).fill("AI analysis not available.");
+  return (
+    <div className="ai-panel">
+      <div className="ai-panel-hdr">
+        <div className="ai-badge">AI</div>
+        <div>
+          <div className="ai-panel-title">MediSecond AI Pre-Screening Panel</div>
+          <div className="ai-panel-sub">5 leading AI assistants reviewed your case · {fmtDate(comment.createdAt)}</div>
+        </div>
+        <div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}>
+          <span className="ai-instant-badge">⚡ Instant AI</span>
+          {canDelete && <button className="btn btn-sm" style={{background:"rgba(239,68,68,.2)",color:"#fca5a5",border:"1px solid rgba(239,68,68,.3)"}} onClick={onDelete}><IcoTrash sz={10} c="currentColor"/> Delete</button>}
+        </div>
+      </div>
+      <div className="ai-responses">
+        {AI_ASSISTANTS.map((ai,i)=>(
+          <div key={ai.name} className="ai-response" style={{background:ai.bg,borderLeftColor:ai.color}}>
+            <div className="ai-resp-hdr">
+              <span style={{fontSize:14}}>{ai.emoji}</span>
+              <span className="ai-name" style={{color:ai.color}}>{ai.name}</span>
+              <span className="ai-by">by {ai.brand}</span>
+            </div>
+            <div className="ai-text">{texts[i]}</div>
+          </div>
+        ))}
+        <div className="ai-disclaimer">
+          <span style={{fontSize:15,flexShrink:0}}>⚠️</span>
+          <p className="ai-disclaimer-text"><strong>Important:</strong> The above represents automated AI perspectives only and does not constitute medical advice. Please wait for a <strong>verified human specialist</strong> on this platform before taking any action.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── CASE CARD ─── */
+function CaseCard({post,currentUser,onExpand,expanded,onLike,onDislike,onEdit,onDelete,onComment,onDeleteComment,onAddReply,isAdmin}) {
+  const [commentText,setCommentText] = useState("");
+  const [openReply,setOpenReply] = useState(null);
+  const [replyText,setReplyText] = useState("");
+  const liked    = (post.likes||[]).includes(currentUser.id);
+  const disliked = (post.dislikes||[]).includes(currentUser.id);
+  const isOwn    = post.authorId===currentUser.id;
+  const canManage= isAdmin||isOwn;
+  const canComment = currentUser.role!=="patient"||isOwn;
+
+  const submitComment = () => {
+    if(!commentText.trim()) return;
+    onComment(post.id,commentText.trim());
+    setCommentText("");
+  };
+
+  return (
+    <div className="case-card">
+      <div className="case-hdr">
+        <Avatar initials={post.authorName.split(" ").map(w=>w[0]).join("").slice(0,2)} size={38} bg={avatarBg(SEED_USERS.find(u=>u.id===post.authorId)?.role||"patient")}/>
+        <div style={{flex:1}}>
+          <div className="case-meta-top">
+            <span className="case-author">{post.authorName}</span>
+            <RoleBadge role={SEED_USERS.find(u=>u.id===post.authorId)?.role||"patient"}/>
+            <span className="case-time">{fmtDate(post.createdAt)}</span>
+          </div>
+          <div className="case-tags">
+            <CatTag cat={post.category}/>
+            <StatusTag status={post.status}/>
+            <PriorityTag priority={post.priority}/>
+          </div>
+        </div>
+      </div>
+
+      <div className="case-title" onClick={()=>onExpand(post.id)}>{post.title}</div>
+      <div className="case-excerpt">{expanded ? post.content : post.content.slice(0,200)+(post.content.length>200?"…":"")}</div>
+
+      {post.attachments&&post.attachments.length>0&&post.attachments.map(a=>(
+        <div key={a.id} className="attach-chip"><IcoClip sz={11} c="currentColor"/> {a.name} <span style={{color:"var(--c-hint)"}}>· tap to view</span></div>
+      ))}
+
+      <div className="case-footer">
+        <button className={`vote-btn ${liked?"active":""}`} onClick={()=>onLike(post.id)}>👍 {(post.likes||[]).length}</button>
+        <button className={`vote-btn dislike ${disliked?"active":""}`} onClick={()=>onDislike(post.id)}>👎 {(post.dislikes||[]).length}</button>
+        <button className="cmt-btn" onClick={()=>onExpand(post.id)}>
+          <IcoMsg sz={12} c="currentColor"/> {(post.comments||[]).length} comment{(post.comments||[]).length!==1?"s":""}
+        </button>
+        {!expanded&&post.content.length>200&&<button className="read-full-btn" onClick={()=>onExpand(post.id)}>Read Full Case</button>}
+        {canManage&&(
+          <div className="case-admin-actions">
+            <button className="btn-teal-ghost btn" onClick={()=>onEdit(post)}><IcoEdit sz={11} c="currentColor"/> Edit</button>
+            <button className="btn-red-ghost btn" onClick={()=>onDelete(post.id)}><IcoTrash sz={11} c="currentColor"/> Delete</button>
+          </div>
+        )}
+      </div>
+
+      {expanded&&(
+        <div className="discussion fade-up">
+          <div className="discussion-title">Discussion ({(post.comments||[]).length})</div>
+          {(post.comments||[]).map(c=>(
+            c.role==="ai" ? (
+              <AIPanelComment key={c.id} comment={c} canDelete={isAdmin} onDelete={()=>onDeleteComment(post.id,c.id)}/>
+            ) : (
+              <div key={c.id} className="comment">
+                <Avatar initials={c.authorName.split(" ").map(w=>w[0]).join("").slice(0,2)} size={34} bg={avatarBg(c.role)}/>
+                <div className="comment-body">
+                  <div className="comment-meta">
+                    <span className="comment-author">{c.authorName}</span>
+                    <RoleBadge role={c.role}/>
+                    {c.specialty&&c.specialty!=="Platform Administrator"&&<span className="comment-specialty">· {c.specialty}</span>}
+                    <span className="comment-time">{fmtDate(c.createdAt)}</span>
+                  </div>
+                  <div className="comment-text">{c.content}</div>
+                  <div className="comment-actions">
+                    <button className={`vote-btn ${(c.likes||[]).includes(currentUser.id)?"active":""}`} style={{fontSize:11,padding:"3px 8px"}} onClick={()=>{}}>👍 {(c.likes||[]).length}</button>
+                    <button className="vote-btn dislike" style={{fontSize:11,padding:"3px 8px"}}>👎 {(c.dislikes||[]).length}</button>
+                    <button className="cmt-btn" style={{fontSize:11,padding:"3px 8px"}} onClick={()=>setOpenReply(openReply===c.id?null:c.id)}>
+                      <IcoMsg sz={10} c="currentColor"/> Reply{c.replies?.length>0?` (${c.replies.length})`:""}
+                    </button>
+                    {(isAdmin||currentUser.id===c.authorId)&&<>
+                      <button className="btn-teal-ghost btn" style={{fontSize:11,padding:"3px 8px"}}><IcoEdit sz={10} c="currentColor"/> Edit</button>
+                      <button className="btn-red-ghost btn" style={{fontSize:11,padding:"3px 8px"}} onClick={()=>onDeleteComment(post.id,c.id)}><IcoTrash sz={10} c="currentColor"/> Delete</button>
+                    </>}
+                  </div>
+                  {(c.replies||[]).length>0&&(
+                    <div className="reply-indent">
+                      {c.replies.map(r=>(
+                        <div key={r.id} className="reply">
+                          <div className="reply-meta">
+                            <Avatar initials={r.authorName.split(" ").map(w=>w[0]).join("").slice(0,2)} size={20} bg={avatarBg(r.role)}/>
+                            <span className="reply-author">{r.authorName}</span>
+                            <RoleBadge role={r.role}/>
+                            <span className="reply-time">{fmtDate(r.createdAt)}</span>
+                          </div>
+                          <p className="reply-text">{r.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {openReply===c.id&&(
+                    <div style={{display:"flex",gap:8,marginTop:10}}>
+                      <textarea className="comment-textarea" style={{minHeight:60,fontSize:13}} placeholder="Write a reply…" value={replyText} onChange={e=>setReplyText(e.target.value)}/>
+                      <button className="post-btn btn-sm" onClick={()=>{if(replyText.trim()){onAddReply(post.id,c.id,replyText.trim());setReplyText("");setOpenReply(null);}}}><IcoSend sz={12} c="#fff"/> Send</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          ))}
+          {canComment&&(
+            <div className="comment-input-area">
+              <Avatar initials={currentUser.avatar} size={34} bg={avatarBg(currentUser.role)}/>
+              <div style={{flex:1}}>
+                <textarea className="comment-textarea" placeholder={currentUser.role==="patient"?"Write a comment or ask a follow-up question…":"Write your clinical opinion here…"} value={commentText} onChange={e=>setCommentText(e.target.value)}/>
+              </div>
+              <button className="post-btn" onClick={submitComment}>
+                <IcoSend sz={13} c="#fff"/> {currentUser.role==="patient"?"Post Comment":"Post Opinion"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── NOTIFICATIONS PANEL ─── */
+function NotifPanel({notifs,onMarkAll}) {
+  return (
+    <div className="notif-panel">
+      <div className="notif-hdr">
+        <span className="notif-hdr-title">Notifications</span>
+        <button className="notif-mark-all" onClick={onMarkAll}>Mark all read</button>
+      </div>
+      {notifs.length===0 ? (
+        <div style={{padding:"32px 16px",textAlign:"center",color:"var(--c-hint)",fontSize:13}}>
+          <IcoBell sz={28} c="var(--c-border)"/><br/>No notifications yet
+        </div>
+      ) : notifs.map(n=>(
+        <div key={n.id} className="notif-item">
+          <div className="notif-icon"><IcoMsg sz={14} c="var(--c-teal)"/></div>
+          <div className="notif-content" style={{flex:1}}>
+            <p>{n.message}</p>
+            <small>{fmtDate(n.createdAt)}</small>
+            {n.postTitle&&<div className="notif-case">{n.postTitle.slice(0,42)}…</div>}
+          </div>
+          {!n.isRead&&<div className="notif-unread-dot"/>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── DASHBOARD ─── */
+function Dashboard({currentUser,users,posts,setPosts,onLogout,notifications,setNotifications,addNotification}) {
+  const [view,setView] = useState("posts");
+  const [search,setSearch] = useState("");
+  const [filterCat,setFilterCat] = useState("All");
+  const [showCreate,setShowCreate] = useState(false);
+  const [editPost,setEditPost] = useState(null);
+  const [expandedId,setExpandedId] = useState(null);
+  const [bellOpen,setBellOpen] = useState(false);
+  const bellRef = useRef();
+
+  useEffect(()=>{
+    const h = e=>{ if(bellRef.current&&!bellRef.current.contains(e.target)) setBellOpen(false); };
+    document.addEventListener("mousedown",h);
+    return()=>document.removeEventListener("mousedown",h);
+  },[]);
+
+  const myNotifs  = notifications.filter(n=>n.forUserId===currentUser.id);
+  const unreadCnt = myNotifs.filter(n=>!n.isRead).length;
+  const openBell  = () => { setBellOpen(b=>!b); setNotifications(p=>p.map(n=>n.forUserId===currentUser.id?{...n,isRead:true}:n)); };
+
+  const visiblePosts = posts.filter(p=>{
+    if(currentUser.role==="patient"&&p.authorId!==currentUser.id) return false;
+    if(filterCat!=="All"&&p.category!==filterCat) return false;
+    if(search&&!p.title.toLowerCase().includes(search.toLowerCase())&&!p.content.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  }).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+
+  const handleCreate = data => {
+    const np = {id:"p-"+Date.now(),authorId:currentUser.id,authorName:currentUser.name,title:data.title,content:data.content,category:data.category,priority:data.priority,status:"pending",createdAt:new Date().toISOString(),attachments:[],likes:[],dislikes:[],comments:[]};
+    if(currentUser.role==="patient") np.comments = [makeAIComment(np)];
+    setPosts(p=>[np,...p]);
+    setShowCreate(false);
+    if(currentUser.role==="patient") users.filter(u=>u.role==="doctor"||u.role==="admin").forEach(u=>addNotification({forUserId:u.id,type:"new_post",message:`New ${data.category} case: "${data.title.slice(0,50)}"`,postTitle:data.title,postId:np.id,isRead:false}));
+  };
+  const handleEdit = data => { setPosts(p=>p.map(x=>x.id===editPost.id?{...x,...data}:x)); setEditPost(null); };
+  const handleDelete = id => { if(window.confirm("Delete this post?")) setPosts(p=>p.filter(x=>x.id!==id)); };
+  const handleLike = pid => { setPosts(p=>p.map(x=>x.id!==pid?x:{...x,likes:(x.likes||[]).includes(currentUser.id)?(x.likes||[]).filter(i=>i!==currentUser.id):[...(x.likes||[]),currentUser.id],dislikes:(x.dislikes||[]).filter(i=>i!==currentUser.id)})); };
+  const handleDislike = pid => { setPosts(p=>p.map(x=>x.id!==pid?x:{...x,dislikes:(x.dislikes||[]).includes(currentUser.id)?(x.dislikes||[]).filter(i=>i!==currentUser.id):[...(x.dislikes||[]),currentUser.id],likes:(x.likes||[]).filter(i=>i!==currentUser.id)})); };
+  const handleComment = (pid,text) => {
+    const post=posts.find(p=>p.id===pid);
+    const nc={id:"c-"+Date.now(),authorId:currentUser.id,authorName:currentUser.name,role:currentUser.role,specialty:currentUser.specialty||"",content:text,createdAt:new Date().toISOString(),likes:[],dislikes:[],replies:[]};
+    setPosts(p=>p.map(x=>x.id!==pid?x:{...x,status:"responded",comments:[...x.comments,nc]}));
+    if(post&&post.authorId!==currentUser.id) addNotification({forUserId:post.authorId,type:"comment",message:`${currentUser.name} commented on your post`,postTitle:post.title,postId:pid,isRead:false});
+  };
+  const handleDeleteComment = (pid,cid) => { setPosts(p=>p.map(x=>x.id!==pid?x:{...x,comments:x.comments.filter(c=>c.id!==cid)})); };
+  const handleAddReply = (pid,cid,text) => {
+    const nr={id:"r-"+Date.now(),authorId:currentUser.id,authorName:currentUser.name,role:currentUser.role,content:text,createdAt:new Date().toISOString(),likes:[],dislikes:[]};
+    setPosts(p=>p.map(x=>x.id!==pid?x:{...x,comments:x.comments.map(c=>c.id!==cid?c:{...c,replies:[...(c.replies||[]),nr]})}));
+  };
+
+  const isAdmin = currentUser.role==="admin";
+  const totalPatients = users.filter(u=>u.role==="patient").length;
+  const totalDoctors  = users.filter(u=>u.role==="doctor").length;
+  const pendingPosts  = posts.filter(p=>p.status==="pending").length;
+
+  const navItems = [
+    {key:"posts",label:"Case Feed",icon:<IcoFile sz={16} c="currentColor"/>},
+    {key:"profile",label:"My Profile",icon:<IcoUser sz={16} c="currentColor"/>},
+    ...(currentUser.role==="admin"?[{key:"admin",label:"Admin Panel",icon:<IcoShield sz={16} c="currentColor"/>},{key:"users",label:"Users",icon:<IcoUsers sz={16} c="currentColor"/>}]:[]),
+    ...(currentUser.role==="doctor"?[{key:"stats",label:"My Activity",icon:<IcoActivity sz={16} c="currentColor"/>}]:[]),
+  ];
+
+  const topbarText = {posts:currentUser.role==="patient"?"Your submitted cases — private to doctors and admins only.":currentUser.role==="doctor"?"All patient cases awaiting specialist review.":"Full platform overview and management tools.",profile:"Manage your personal information.",admin:"Platform metrics and system health.",users:"Registered users and account management.",stats:"Your activity log and clinical contributions."};
+
+  return (
+    <div className="dash">
+      <div className="sidebar">
+        <div className="sb-brand">
+          <div className="sb-brand-inner">
+            <div style={{width:30,height:30,background:"var(--c-teal)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center"}}><IcoHeart sz={15} c="#fff"/></div>
+            <span style={{color:"#fff",fontSize:16,fontWeight:800}}>Medi<span style={{color:"var(--c-teal2)"}}>Second</span></span>
+          </div>
+        </div>
+        <div className="sb-user">
+          <Avatar initials={currentUser.avatar} size={36} bg={avatarBg(currentUser.role)}/>
+          <div className="sb-user-info">
+            <div className="sb-user-name">{currentUser.name}</div>
+            <RoleBadge role={currentUser.role}/>
+          </div>
+        </div>
+        <nav className="sb-nav">
+          {navItems.map(n=>(
+            <button key={n.key} className={`sb-link ${view===n.key?"sb-link-active":"sb-link-inactive"}`} onClick={()=>setView(n.key)}>
+              {n.icon} {n.label}
+            </button>
+          ))}
+        </nav>
+        <div className="sb-footer">
+          <button className="sb-logout" onClick={onLogout}><IcoLogout sz={15} c="currentColor"/> Log Out</button>
+        </div>
+      </div>
+
+      <div className="main">
+        <div className="topbar">
+          <div className="topbar-info">
+            <div className="topbar-title">{navItems.find(n=>n.key===view)?.label||"Dashboard"}</div>
+            <div className="topbar-sub">{topbarText[view]}</div>
+          </div>
+          <div className="topbar-actions">
+            {view==="posts"&&(currentUser.role==="admin"||currentUser.role==="patient")&&(
+              <button className="new-case-btn" onClick={()=>setShowCreate(true)}><IcoPlus sz={13} c="#fff"/> New Case</button>
+            )}
+            <div ref={bellRef} style={{position:"relative"}}>
+              <button className="bell-btn" onClick={openBell}>
+                <IcoBell sz={18} c={unreadCnt>0?"var(--c-navy)":"var(--c-muted)"}/>
+                {unreadCnt>0&&<span className="bell-badge"/>}
+              </button>
+              {bellOpen&&<NotifPanel notifs={myNotifs} onMarkAll={()=>setNotifications(p=>p.map(n=>n.forUserId===currentUser.id?{...n,isRead:true}:n))}/>}
+            </div>
+            <button className="avatar-btn" style={{background:avatarBg(currentUser.role)}}>{currentUser.avatar}</button>
+          </div>
+        </div>
+
+        <div className="content">
+          {/* ── CASE FEED ── */}
+          {view==="posts"&&(
+            <div className="fade-up">
+              <div className="feed-toolbar">
+                <div className="search-wrap">
+                  <span className="search-icon"><IcoSearch sz={14} c="currentColor"/></span>
+                  <input placeholder="Search cases…" value={search} onChange={e=>setSearch(e.target.value)}/>
+                </div>
+                <select className="filter-sel" value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
+                  {["All","Cardiology","Neurology","General Medicine","Radiology","Announcement"].map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+
+              {currentUser.role==="patient"&&(
+                <div className="banner banner-purple"><span className="banner-icon"><IcoLock sz={13} c="var(--c-purple)"/></span>Your cases are strictly private — only verified doctors and admins can see them. After you submit, our AI panel pre-screens your case immediately while you await a human specialist.</div>
+              )}
+              {currentUser.role==="doctor"&&(
+                <div className="banner banner-teal"><span className="banner-icon"><IcoShield sz={13} c="var(--c-teal)"/></span>You can view all patient cases. Expand a case to post your clinical opinion. You can only edit or delete your own comments.</div>
+              )}
+
+              {visiblePosts.length===0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon"><IcoFile sz={26} c="var(--c-hint)"/></div>
+                  <div className="empty-h">No cases found</div>
+                  <p className="empty-p">Submit your first case to get a specialist second opinion.</p>
+                  {currentUser.role==="patient"&&<button className="btn btn-primary" onClick={()=>setShowCreate(true)}><IcoPlus sz={13} c="#fff"/> Submit a Case</button>}
+                </div>
+              ) : visiblePosts.map(p=>(
+                <CaseCard key={p.id} post={p} currentUser={currentUser} expanded={expandedId===p.id}
+                  onExpand={id=>setExpandedId(expandedId===id?null:id)} onLike={handleLike} onDislike={handleDislike}
+                  onEdit={setEditPost} onDelete={handleDelete} onComment={handleComment}
+                  onDeleteComment={handleDeleteComment} onAddReply={handleAddReply} isAdmin={isAdmin}/>
+              ))}
+            </div>
+          )}
+
+          {/* ── PROFILE ── */}
+          {view==="profile"&&(
+            <div className="fade-up">
+              <div className="profile-hdr-card">
+                <div className="profile-av">{currentUser.avatar}</div>
+                <div className="profile-name">{currentUser.name}</div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}>
+                  <RoleBadge role={currentUser.role}/>
+                  {currentUser.specialty&&<span className="profile-sub">· {currentUser.specialty}</span>}
+                </div>
+                <div className="profile-info-grid">
+                  <div className="profile-info-item"><label>Email</label><p>{currentUser.email}</p></div>
+                  <div className="profile-info-item"><label>Member Since</label><p>{new Date(currentUser.joinDate).toLocaleDateString("en-GB",{month:"long",year:"numeric"})}</p></div>
+                  {currentUser.hospital&&<div className="profile-info-item"><label>Hospital</label><p>{currentUser.hospital}</p></div>}
+                  <div className="profile-info-item"><label>Cases</label><p>{posts.filter(p=>p.authorId===currentUser.id).length} submitted</p></div>
+                </div>
+              </div>
+              {currentUser.bio&&(
+                <div className="card" style={{padding:"20px 24px"}}>
+                  <div className="section-label" style={{marginBottom:10}}>Bio</div>
+                  <p style={{fontSize:14,color:"var(--c-text)",lineHeight:1.7}}>{currentUser.bio}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── ADMIN PANEL ── */}
+          {view==="admin"&&isAdmin&&(
+            <div className="fade-up">
+              <div className="admin-stats">
+                {[[posts.length,"Total Cases","↑ 12% this month","change-up"],[pendingPosts,"Awaiting Review","⚡ Needs attention","change-warn"],[totalPatients,"Registered Patients","↑ 3 new this week","change-up"],[totalDoctors,"Verified Specialists","All verified","change-up"]].map(([n,l,c,cls])=>(
+                  <div key={l} className="admin-stat">
+                    <div className="admin-stat-n">{n}</div>
+                    <div className="admin-stat-label">{l}</div>
+                    <div className={`admin-stat-change ${cls}`}>{c}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="card" style={{padding:"20px 24px",marginBottom:14}}>
+                <div className="section-label" style={{marginBottom:12}}>Platform Health</div>
+                <div className="health-row">
+                  <div className="health-item"><div className="health-label">API Status</div><div className="health-val h-green">● Operational</div></div>
+                  <div className="health-item"><div className="health-label">AI Panel</div><div className="health-val h-green">● Active (5 models)</div></div>
+                  <div className="health-item"><div className="health-label">Avg Response</div><div className="health-val" style={{color:"var(--c-navy)"}}>42 hrs</div></div>
+                </div>
+              </div>
+              <div className="card" style={{padding:"20px 24px"}}>
+                <div className="section-label" style={{marginBottom:12}}>Recent Activity</div>
+                {posts.slice(0,3).map(p=>(
+                  <div key={p.id} className="activity-item">
+                    <div className="activity-dot"/>
+                    <div>
+                      <div className="activity-txt"><strong>{p.authorName}</strong> submitted a {p.category} case: "{p.title.slice(0,50)}…"</div>
+                      <div className="activity-time">{fmtDate(p.createdAt)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── USERS ── */}
+          {view==="users"&&isAdmin&&(
+            <div className="fade-up">
+              <table className="users-table">
+                <thead><tr><th>User</th><th>Role</th><th>Email</th><th>Hospital / Notes</th><th>Joined</th><th>Status</th></tr></thead>
+                <tbody>
+                  {users.map(u=>(
+                    <tr key={u.id}>
+                      <td><div style={{display:"flex",alignItems:"center",gap:10}}><Avatar initials={u.avatar} size={30} bg={avatarBg(u.role)}/><strong>{u.name}</strong></div></td>
+                      <td><RoleBadge role={u.role}/></td>
+                      <td style={{color:"var(--c-muted)"}}>{u.email}</td>
+                      <td style={{color:"var(--c-muted)"}}>{u.hospital||"—"}</td>
+                      <td style={{color:"var(--c-muted)"}}>{u.joinDate}</td>
+                      <td><span className="status-dot"/>Active</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ── ACTIVITY ── */}
+          {view==="stats"&&currentUser.role==="doctor"&&(
+            <div className="fade-up">
+              <div className="card" style={{padding:"20px 24px",marginBottom:14}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:0}}>
+                  {[[posts.filter(p=>p.comments.some(c=>c.authorId===currentUser.id)).length,"Cases Commented"],[posts.reduce((a,p)=>a+(p.comments||[]).filter(c=>c.authorId===currentUser.id).length,0),"Total Opinions Posted"],[posts.filter(p=>(p.likes||[]).includes(currentUser.id)).length,"Cases Endorsed"]].map(([n,l])=>(
+                    <div key={l} className="admin-stat">
+                      <div className="admin-stat-n">{n}</div>
+                      <div className="admin-stat-label">{l}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="card" style={{padding:"20px 24px"}}>
+                <div className="section-label" style={{marginBottom:14}}>Recent Activity</div>
+                <div className="activity-timeline">
+                  {posts.flatMap(p=>(p.comments||[]).filter(c=>c.authorId===currentUser.id).map(c=>({...c,postTitle:p.title,postId:p.id}))).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6).map(c=>(
+                    <div key={c.id} className="activity-item">
+                      <div className="activity-dot"/>
+                      <div>
+                        <div className="activity-txt">Commented on <strong>"{c.postTitle.slice(0,50)}…"</strong></div>
+                        <div style={{fontSize:12.5,color:"var(--c-muted)",marginTop:4,lineHeight:1.55}}>"{c.content.slice(0,80)}…"</div>
+                        <div className="activity-time">{fmtDate(c.createdAt)}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {posts.flatMap(p=>(p.comments||[]).filter(c=>c.authorId===currentUser.id)).length===0&&(
+                    <div className="empty-state">
+                      <div className="empty-icon"><IcoActivity sz={24} c="var(--c-hint)"/></div>
+                      <div className="empty-h">No activity yet</div>
+                      <p className="empty-p">Post clinical opinions on patient cases to see your activity here.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {(showCreate||editPost)&&(
+        <SubmitModal onClose={()=>{setShowCreate(false);setEditPost(null);}} onSubmit={editPost?handleEdit:handleCreate} existing={editPost||null}/>
+      )}
+    </div>
+  );
+}
+
+/* ─── ABOUT PAGE ─── */
+function AboutPage({onBack,onRegister}) {
+  return (
+    <div style={{background:"var(--c-bg)",minHeight:"100%",overflowY:"auto"}}>
+      <nav className="lp-nav">
+        <div className="lp-logo">
+          <div className="lp-logo-icon"><IcoHeart sz={16} c="#fff"/></div>
+          <div className="lp-logo-text">Medi<span>Second</span></div>
+        </div>
+        <button className="back-btn" onClick={onBack}><IcoArrow sz={14} c="currentColor" style={{transform:"rotate(180deg)"}}/> Back</button>
+      </nav>
+      <div className="about-hero">
+        <div style={{display:"inline-block",background:"rgba(77,217,208,.12)",border:"1px solid rgba(77,217,208,.3)",borderRadius:20,padding:"4px 14px",fontSize:12,fontWeight:600,color:"var(--c-teal2)",marginBottom:16}}>Our Mission</div>
+        <h1>Democratising Access to<br/>Expert Medical Opinion</h1>
+        <p style={{color:"rgba(255,255,255,.68)",fontSize:16,maxWidth:580,margin:"14px auto 28px",lineHeight:1.65}}>MediSecond was born from a simple but powerful belief: that where you live should not determine the quality of medical guidance you receive.</p>
+        <button className="btn btn-amber btn-lg" onClick={onRegister}>Join MediSecond Today</button>
+      </div>
+      <div className="about-section">
+        {[["Our Vision","We envision a world where a patient in rural Bangladesh receives the same quality of specialist input as one at a metropolitan teaching hospital. By combining human expertise with AI-assisted triage, MediSecond bridges this gap at scale."],["How We Work","When a patient submits a case, our AI panel immediately pre-screens it with five leading language models, highlighting key clinical considerations. The case is then routed to board-certified human specialists in the relevant field, who provides a structured, evidence-based second opinion within 48 hours."],["Our Commitment to Privacy","We are built with privacy as a first principle. Patients' cases are never visible to other patients or to the general public. Access is strictly limited to the patient, their assigned specialist, and platform administrators. All data is encrypted at rest and in transit."]].map(([h,p])=>(
+          <div key={h} style={{marginBottom:36}}>
+            <h3 style={{fontSize:20,fontWeight:700,color:"var(--c-navy)",marginBottom:12}}>{h}</h3>
+            <p style={{fontSize:15,color:"var(--c-muted)",lineHeight:1.75}}>{p}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── CONTACT PAGE ─── */
+function ContactPage({onBack}) {
+  const [form,setForm] = useState({name:"",email:"",subject:"",message:""});
+  const [sent,setSent] = useState(false);
+  const inp = {width:"100%",padding:"10px 12px",border:"1.5px solid var(--c-border2)",borderRadius:8,fontSize:14,color:"var(--c-text)",outline:"none",fontFamily:"Inter,sans-serif"};
+  return (
+    <div style={{background:"var(--c-bg)",minHeight:"100%",overflowY:"auto"}}>
+      <nav className="lp-nav">
+        <div className="lp-logo">
+          <div className="lp-logo-icon"><IcoHeart sz={16} c="#fff"/></div>
+          <div className="lp-logo-text">Medi<span>Second</span></div>
+        </div>
+        <button className="back-btn" onClick={onBack}><IcoArrow sz={14} c="currentColor" style={{transform:"rotate(180deg)"}}/> Back</button>
+      </nav>
+      <div className="about-hero">
+        <h1>Get in Touch</h1>
+        <p style={{color:"rgba(255,255,255,.68)",fontSize:16,maxWidth:460,margin:"14px auto 0",lineHeight:1.65}}>Have a question or need help? We typically respond within one business day.</p>
+      </div>
+      <div style={{maxWidth:560,margin:"0 auto",padding:"48px 24px"}}>
+        {sent ? (
+          <div style={{textAlign:"center",padding:"60px 0"}}>
+            <div style={{width:64,height:64,background:"var(--c-green-bg)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IcoCheck sz={28} c="var(--c-green)"/></div>
+            <h3 style={{fontSize:22,fontWeight:700,color:"var(--c-navy)",marginBottom:8}}>Message Sent!</h3>
+            <p style={{color:"var(--c-muted)",fontSize:15,lineHeight:1.65}}>Thank you for reaching out. I'll get back to you within one business day.</p>
+            <button className="btn btn-primary" style={{marginTop:24}} onClick={()=>setSent(false)}>Send Another Message</button>
+          </div>
+        ) : (
+          <div className="card" style={{padding:"32px 28px"}}>
+            <h2 style={{fontSize:20,fontWeight:700,color:"var(--c-navy)",marginBottom:24}}>Send a Message</h2>
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                <div><label style={{fontSize:12,fontWeight:700,color:"var(--c-muted)",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".05em"}}>Name *</label><input style={inp} placeholder="Your name" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/></div>
+                <div><label style={{fontSize:12,fontWeight:700,color:"var(--c-muted)",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".05em"}}>Email *</label><input style={inp} type="email" placeholder="you@email.com" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/></div>
+              </div>
+              <div><label style={{fontSize:12,fontWeight:700,color:"var(--c-muted)",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".05em"}}>Subject</label><input style={inp} placeholder="What is your enquiry about?" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))}/></div>
+              <div><label style={{fontSize:12,fontWeight:700,color:"var(--c-muted)",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".05em"}}>Message *</label><textarea style={{...inp,minHeight:120,resize:"vertical",lineHeight:1.65}} placeholder="Please describe your question or issue…" value={form.message} onChange={e=>setForm(f=>({...f,message:e.target.value}))}/></div>
+              <button className="btn btn-primary" style={{width:"100%",padding:"12px"}} onClick={()=>{if(form.name&&form.email&&form.message)setSent(true)}}><IcoSend sz={14} c="#fff"/> Send Message</button>
+              <p style={{fontSize:12,color:"var(--c-hint)",textAlign:"center"}}>I typically respond within one business day. For urgent clinical issues, please contact your local emergency services.</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── MAIN APP ─── */
+function App() {
+  const [currentUser,setCurrentUser] = useState(null);
+  const [authMode,setAuthMode] = useState(null);
+  const [users,setUsers] = useState(SEED_USERS);
+  const [posts,setPosts] = useState(SEED_POSTS);
+  const [landingPage,setLandingPage] = useState("home");
+  const [notifications,setNotifications] = useState(SEED_NOTIFS);
+  const addNotification = n => setNotifications(p=>[{...n,id:"n-"+Date.now(),createdAt:new Date().toISOString()},...p]);
+  const handleAuth   = u => { setCurrentUser(u); setAuthMode(null); };
+  const handleLogout = () => { setCurrentUser(null); setAuthMode(null); setLandingPage("home"); };
+
+  if(!currentUser) {
+    if(landingPage==="about") return <AboutPage onBack={()=>setLandingPage("home")} onRegister={()=>{setLandingPage("home");setAuthMode("register");}}/>;
+    if(landingPage==="contact") return <ContactPage onBack={()=>setLandingPage("home")}/>;
+    return (
+      <>
+        <LandingPage onLogin={()=>setAuthMode("login")} onRegister={()=>setAuthMode("register")} onAbout={()=>setLandingPage("about")} onContact={()=>setLandingPage("contact")}/>
+        {authMode&&<AuthModal mode={authMode} onClose={()=>setAuthMode(null)} onAuth={handleAuth} users={users} setUsers={setUsers}/>}
+      </>
+    );
+  }
+  return <Dashboard currentUser={currentUser} users={users} posts={posts} setPosts={setPosts} onLogout={handleLogout} notifications={notifications} setNotifications={setNotifications} addNotification={addNotification}/>;
+}
+
+/* ─── PROTOTYPE VIEWER ─── */
+const SCREENS = [
+  {name:"01 — Landing Page",             ratio:[1440,900]},
+  {name:"02 — Auth: Log In",             ratio:[1440,900]},
+  {name:"03 — Auth: Register",           ratio:[1440,900]},
+  {name:"04 — Patient: Case Feed",       ratio:[1440,900]},
+  {name:"05 — Patient: Submit Case",     ratio:[1440,900]},
+  {name:"06 — Patient: Case Detail + AI",ratio:[1440,900]},
+  {name:"07 — Doctor: Case Feed",        ratio:[1440,900]},
+  {name:"08 — Admin: Case Feed",         ratio:[1440,900]},
+  {name:"09 — Admin: Panel & Users",     ratio:[1440,900]},
+  {name:"10 — About & Contact",          ratio:[1440,900]},
+];
+
+/* Pre-defined state snapshot for each screen */
+const SCREEN_STATES = [
+  // 0: Landing
+  {user:null,authMode:null,page:"home"},
+  // 1: Login modal
+  {user:null,authMode:"login",page:"home"},
+  // 2: Register modal
+  {user:null,authMode:"register",page:"home"},
+  // 3: Patient case feed
+  {user:SEED_USERS[3],view:"posts"},
+  // 4: Patient submit modal (shown on feed)
+  {user:SEED_USERS[3],view:"posts",showCreate:true},
+  // 5: Patient case detail with AI panel expanded
+  {user:SEED_USERS[3],view:"posts",expandedId:"p-1"},
+  // 6: Doctor case feed
+  {user:SEED_USERS[1],view:"posts"},
+  // 7: Admin case feed
+  {user:SEED_USERS[0],view:"posts"},
+  // 8: Admin panel
+  {user:SEED_USERS[0],view:"admin"},
+  // 9: About page
+  {user:null,authMode:null,page:"about"},
+];
+
+function ScreenRenderer({screenIdx}) {
+  const s = SCREEN_STATES[screenIdx];
+  const [users,setUsers] = useState(SEED_USERS);
+  const [posts,setPosts] = useState(SEED_POSTS);
+  const [notifications,setNotifications] = useState(SEED_NOTIFS);
+  const addNotification = n => setNotifications(p=>[{...n,id:"n-"+Date.now(),createdAt:new Date().toISOString()},...p]);
+  const [posts2,setPosts2] = useState(SEED_POSTS);
+  const [notif2,setNotif2] = useState(SEED_NOTIFS);
+
+  if(!s.user) {
+    const p = s.page||"home";
+    if(p==="about") return <AboutPage onBack={()=>{}} onRegister={()=>{}}/>;
+    if(p==="contact") return <ContactPage onBack={()=>{}}/>;
+    return (
+      <>
+        <LandingPage onLogin={()=>{}} onRegister={()=>{}} onAbout={()=>{}} onContact={()=>{}}/>
+        {s.authMode&&<AuthModal mode={s.authMode} onClose={()=>{}} onAuth={()=>{}} users={SEED_USERS} setUsers={()=>{}}/>}
+      </>
+    );
+  }
+
+  /* Inject the screen's default view & expanded state into Dashboard */
+  function DashWithState() {
+    const [view,setView] = useState(s.view||"posts");
+    const [expand,setExpand] = useState(s.expandedId||null);
+    const [create,setCreate] = useState(s.showCreate||false);
+    const [editP,setEditP] = useState(null);
+    const [search,setSearch] = useState("");
+    const [cat,setCat] = useState("All");
+    const [bellOpen,setBellOpen] = useState(false);
+    const bellRef = useRef();
+    useEffect(()=>{
+      const h=e=>{if(bellRef.current&&!bellRef.current.contains(e.target))setBellOpen(false);};
+      document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);
+    },[]);
+    const cu = s.user;
+    const isAdmin = cu.role==="admin";
+    const myNotifs = SEED_NOTIFS.filter(n=>n.forUserId===cu.id);
+    const unread = myNotifs.filter(n=>!n.isRead).length;
+    const visible = posts2.filter(p=>{
+      if(cu.role==="patient"&&p.authorId!==cu.id) return false;
+      if(cat!=="All"&&p.category!==cat) return false;
+      if(search&&!p.title.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    }).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    const navItems = [{key:"posts",label:"Case Feed",icon:<IcoFile sz={16} c="currentColor"/>},{key:"profile",label:"My Profile",icon:<IcoUser sz={16} c="currentColor"/>},...(cu.role==="admin"?[{key:"admin",label:"Admin Panel",icon:<IcoShield sz={16} c="currentColor"/>},{key:"users",label:"Users",icon:<IcoUsers sz={16} c="currentColor"/>}]:[]),...(cu.role==="doctor"?[{key:"stats",label:"My Activity",icon:<IcoActivity sz={16} c="currentColor"/>}]:[])];
+    const handleCreate = data => {const np={id:"p-"+Date.now(),authorId:cu.id,authorName:cu.name,title:data.title,content:data.content,category:data.category,priority:data.priority,status:"pending",createdAt:new Date().toISOString(),attachments:[],likes:[],dislikes:[],comments:[cu.role==="patient"?makeAIComment({...data}):null].filter(Boolean)};setPosts2(p=>[np,...p]);setCreate(false);};
+    const handleDelete = id=>{if(window.confirm("Delete?"))setPosts2(p=>p.filter(x=>x.id!==id));};
+    const handleComment=(pid,text)=>{const nc={id:"c-"+Date.now(),authorId:cu.id,authorName:cu.name,role:cu.role,specialty:cu.specialty||"",content:text,createdAt:new Date().toISOString(),likes:[],dislikes:[],replies:[]};setPosts2(p=>p.map(x=>x.id!==pid?x:{...x,status:"responded",comments:[...x.comments,nc]}));};
+    const pendingN=posts2.filter(p=>p.status==="pending").length;
+    const topbarSub={posts:cu.role==="patient"?"Your submitted cases — private to doctors and admins only.":cu.role==="doctor"?"All patient cases awaiting specialist review.":"Full platform overview and management tools.",profile:"Manage your personal information.",admin:"Platform metrics and system health.",users:"Registered users and account management.",stats:"Your activity log."};
+
+    return (
+      <div className="dash">
+        <div className="sidebar">
+          <div className="sb-brand"><div className="sb-brand-inner"><div style={{width:30,height:30,background:"var(--c-teal)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center"}}><IcoHeart sz={15} c="#fff"/></div><span style={{color:"#fff",fontSize:16,fontWeight:800}}>Medi<span style={{color:"var(--c-teal2)"}}>Second</span></span></div></div>
+          <div className="sb-user"><Avatar initials={cu.avatar} size={36} bg={avatarBg(cu.role)}/><div className="sb-user-info"><div className="sb-user-name">{cu.name}</div><RoleBadge role={cu.role}/></div></div>
+          <nav className="sb-nav">{navItems.map(n=><button key={n.key} className={`sb-link ${view===n.key?"sb-link-active":"sb-link-inactive"}`} onClick={()=>setView(n.key)}>{n.icon} {n.label}</button>)}</nav>
+          <div className="sb-footer"><button className="sb-logout"><IcoLogout sz={15} c="currentColor"/> Log Out</button></div>
+        </div>
+        <div className="main">
+          <div className="topbar">
+            <div className="topbar-info"><div className="topbar-title">{navItems.find(n=>n.key===view)?.label||"Dashboard"}</div><div className="topbar-sub">{topbarSub[view]}</div></div>
+            <div className="topbar-actions">
+              {view==="posts"&&(cu.role==="admin"||cu.role==="patient")&&<button className="new-case-btn" onClick={()=>setCreate(true)}><IcoPlus sz={13} c="#fff"/> New Case</button>}
+              <div ref={bellRef} style={{position:"relative"}}>
+                <button className="bell-btn" onClick={()=>setBellOpen(b=>!b)}><IcoBell sz={18} c={unread>0?"var(--c-navy)":"var(--c-muted)"}/>{unread>0&&<span className="bell-badge"/>}</button>
+                {bellOpen&&<NotifPanel notifs={myNotifs} onMarkAll={()=>{}}/>}
+              </div>
+              <button className="avatar-btn" style={{background:avatarBg(cu.role)}}>{cu.avatar}</button>
+            </div>
+          </div>
+          <div className="content">
+            {view==="posts"&&(
+              <div className="fade-up">
+                <div className="feed-toolbar">
+                  <div className="search-wrap"><span className="search-icon"><IcoSearch sz={14} c="currentColor"/></span><input placeholder="Search cases…" value={search} onChange={e=>setSearch(e.target.value)}/></div>
+                  <select className="filter-sel" value={cat} onChange={e=>setCat(e.target.value)}>{["All","Cardiology","Neurology","General Medicine","Radiology","Announcement"].map(c=><option key={c}>{c}</option>)}</select>
+                </div>
+                {cu.role==="patient"&&<div className="banner banner-purple"><span className="banner-icon"><IcoLock sz={13} c="var(--c-purple)"/></span>Your cases are strictly private — only verified doctors and admins can see them. After you submit, our AI panel pre-screens your case immediately while you await a human specialist.</div>}
+                {cu.role==="doctor"&&<div className="banner banner-teal"><span className="banner-icon"><IcoShield sz={13} c="var(--c-teal)"/></span>You can view all patient cases. Expand a case to post your clinical opinion. You can only edit or delete your own comments.</div>}
+                {visible.length===0?(<div className="empty-state"><div className="empty-icon"><IcoFile sz={26} c="var(--c-hint)"/></div><div className="empty-h">No cases found</div><p className="empty-p">Submit your first case to get a specialist second opinion.</p>{cu.role==="patient"&&<button className="btn btn-primary" onClick={()=>setCreate(true)}><IcoPlus sz={13} c="#fff"/> Submit a Case</button>}</div>)
+                :visible.map(p=><CaseCard key={p.id} post={p} currentUser={cu} expanded={expand===p.id} onExpand={id=>setExpand(expand===id?null:id)} onLike={()=>{}} onDislike={()=>{}} onEdit={setEditP} onDelete={handleDelete} onComment={handleComment} onDeleteComment={(pid,cid)=>setPosts2(pp=>pp.map(x=>x.id!==pid?x:{...x,comments:x.comments.filter(c=>c.id!==cid)}))} onAddReply={(pid,cid,text)=>{const nr={id:"r-"+Date.now(),authorId:cu.id,authorName:cu.name,role:cu.role,content:text,createdAt:new Date().toISOString(),likes:[],dislikes:[]};setPosts2(pp=>pp.map(x=>x.id!==pid?x:{...x,comments:x.comments.map(c=>c.id!==cid?c:{...c,replies:[...(c.replies||[]),nr]})}));}} isAdmin={isAdmin}/>)}
+              </div>
+            )}
+            {view==="profile"&&(
+              <div className="fade-up">
+                <div className="profile-hdr-card"><div className="profile-av">{cu.avatar}</div><div className="profile-name">{cu.name}</div><div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}><RoleBadge role={cu.role}/>{cu.specialty&&<span className="profile-sub">· {cu.specialty}</span>}</div><div className="profile-info-grid"><div className="profile-info-item"><label>Email</label><p>{cu.email}</p></div><div className="profile-info-item"><label>Member Since</label><p>{new Date(cu.joinDate).toLocaleDateString("en-GB",{month:"long",year:"numeric"})}</p></div>{cu.hospital&&<div className="profile-info-item"><label>Hospital</label><p>{cu.hospital}</p></div>}<div className="profile-info-item"><label>Cases</label><p>{posts2.filter(p=>p.authorId===cu.id).length} submitted</p></div></div></div>
+                {cu.bio&&<div className="card" style={{padding:"20px 24px"}}><div className="section-label" style={{marginBottom:10}}>Bio</div><p style={{fontSize:14,color:"var(--c-text)",lineHeight:1.7}}>{cu.bio}</p></div>}
+              </div>
+            )}
+            {view==="admin"&&isAdmin&&(
+              <div className="fade-up">
+                <div className="admin-stats">
+                  {[[posts2.length,"Total Cases","↑ 12% this month","change-up"],[pendingN,"Awaiting Review","⚡ Needs attention","change-warn"],[users.filter(u=>u.role==="patient").length,"Registered Patients","↑ 3 new this week","change-up"],[users.filter(u=>u.role==="doctor").length,"Verified Specialists","All verified","change-up"]].map(([n,l,c,cls])=>(
+                    <div key={l} className="admin-stat"><div className="admin-stat-n">{n}</div><div className="admin-stat-label">{l}</div><div className={`admin-stat-change ${cls}`}>{c}</div></div>
+                  ))}
+                </div>
+                <div className="card" style={{padding:"20px 24px",marginBottom:14}}><div className="section-label" style={{marginBottom:12}}>Platform Health</div><div className="health-row"><div className="health-item"><div className="health-label">API Status</div><div className="health-val h-green">● Operational</div></div><div className="health-item"><div className="health-label">AI Panel</div><div className="health-val h-green">● Active</div></div><div className="health-item"><div className="health-label">Avg Response</div><div className="health-val" style={{color:"var(--c-navy)"}}>42 hrs</div></div></div></div>
+                <div className="card" style={{padding:"20px 24px"}}><div className="section-label" style={{marginBottom:12}}>Recent Activity</div>{posts2.slice(0,3).map(p=><div key={p.id} className="activity-item"><div className="activity-dot"/><div><div className="activity-txt"><strong>{p.authorName}</strong> submitted: "{p.title.slice(0,55)}…"</div><div className="activity-time">{fmtDate(p.createdAt)}</div></div></div>)}</div>
+              </div>
+            )}
+            {view==="users"&&isAdmin&&(
+              <div className="fade-up">
+                <table className="users-table">
+                  <thead><tr><th>User</th><th>Role</th><th>Email</th><th>Hospital</th><th>Joined</th><th>Status</th></tr></thead>
+                  <tbody>{users.map(u=><tr key={u.id}><td><div style={{display:"flex",alignItems:"center",gap:10}}><Avatar initials={u.avatar} size={30} bg={avatarBg(u.role)}/><strong>{u.name}</strong></div></td><td><RoleBadge role={u.role}/></td><td style={{color:"var(--c-muted)"}}>{u.email}</td><td style={{color:"var(--c-muted)"}}>{u.hospital||"—"}</td><td style={{color:"var(--c-muted)"}}>{u.joinDate}</td><td><span className="status-dot"/>Active</td></tr>)}</tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+        {(create||editP)&&<SubmitModal onClose={()=>{setCreate(false);setEditP(null);}} onSubmit={editP?data=>{setPosts2(p=>p.map(x=>x.id===editP.id?{...x,...data}:x));setEditP(null);}:handleCreate} existing={editP}/>}
+      </div>
+    );
+  }
+  return <DashWithState/>;
+}
+
+/* ─── VIEWER CONTROLLER ─── */
+function Viewer() {
+  const [idx,setIdx] = useState(0);
+  const canvasRef = useRef();
+  const [scale,setScale] = useState(1);
+
+  const updateScale = useCallback(()=>{
+    const c = canvasRef.current;
+    if(!c) return;
+    const cw = c.clientWidth - 80;
+    const ch = c.clientHeight - 80;
+    const fw = SCREENS[0].ratio[0];
+    const fh = SCREENS[0].ratio[1];
+    const s = Math.min(cw/fw, ch/fh, 1);
+    setScale(s);
+  },[]);
+
+  useEffect(()=>{
+    updateScale();
+    window.addEventListener("resize",updateScale);
+    return ()=>window.removeEventListener("resize",updateScale);
+  },[updateScale]);
+
+  useEffect(()=>{
+    document.getElementById("screen-label").textContent = SCREENS[idx].name;
+    document.getElementById("counter").textContent = `${idx+1} / ${SCREENS.length}`;
+    document.getElementById("btn-prev").disabled = idx===0;
+    document.getElementById("btn-next").disabled = idx===SCREENS.length-1;
+    document.getElementById("zoom-label").textContent = Math.round(scale*100)+"%";
+    const dots = document.getElementById("dot-nav");
+    dots.innerHTML="";
+    SCREENS.forEach((_,i)=>{
+      const d=document.createElement("div");
+      d.className="tb-dot"+(i===idx?" active":"");
+      d.onclick=()=>setIdx(i);
+      dots.appendChild(d);
+    });
+  },[idx,scale]);
+
+  useEffect(()=>{
+    document.getElementById("zoom-label").textContent = Math.round(scale*100)+"%";
+  },[scale]);
+
+  const fw = SCREENS[0].ratio[0];
+  const fh = SCREENS[0].ratio[1];
+
+  return (
+    <div ref={canvasRef} id="canvas">
+      <div style={{position:"relative",width:fw*scale,height:fh*scale,flexShrink:0}}>
+        {SCREENS.map((_,i)=>(
+          <div key={i} className={`screen-frame ${i===idx?"active":i<idx?"prev":"next"}`}
+            style={{width:fw,height:fh,transform:`scale(${scale}) ${i===idx?"":"translate("+(i<idx?"-":"")+`${(1-scale)*fw/(2*scale)}px,0)`}`,left:0,top:0,transformOrigin:"top left",position:"absolute"}}>
+            <ScreenRenderer key={i} screenIdx={i}/>
+          </div>
+        ))}
+        <div className="frame-label">{SCREENS[idx].name}</div>
+      </div>
+    </div>
+  );
+}
+
+function navigate(dir) {
+  window._viewer_navigate && window._viewer_navigate(dir);
+}
+
+function ViewerWrapper() {
+  const [idx,setIdx] = React.useState(0);
+  const canvasRef = React.useRef();
+  const [scale,setScale] = React.useState(1);
+
+  window._viewer_navigate = (dir) => {
+    setIdx(i=>Math.min(Math.max(i+dir,0),SCREENS.length-1));
+  };
+
+  const updateScale = React.useCallback(()=>{
+    const c = canvasRef.current;
+    if(!c) return;
+    const cw = c.clientWidth-80, ch = c.clientHeight-80;
+    const fw=SCREENS[0].ratio[0], fh=SCREENS[0].ratio[1];
+    setScale(Math.min(cw/fw,ch/fh,1));
+  },[]);
+
+  React.useEffect(()=>{
+    updateScale();
+    window.addEventListener("resize",updateScale);
+    return()=>window.removeEventListener("resize",updateScale);
+  },[updateScale]);
+
+  React.useEffect(()=>{
+    document.getElementById("screen-label").textContent=SCREENS[idx].name;
+    document.getElementById("counter").textContent=`${idx+1} / ${SCREENS.length}`;
+    document.getElementById("btn-prev").disabled=idx===0;
+    document.getElementById("btn-next").disabled=idx===SCREENS.length-1;
+    document.getElementById("zoom-label").textContent=Math.round(scale*100)+"%";
+    const dots=document.getElementById("dot-nav");
+    dots.innerHTML="";
+    SCREENS.forEach((_,i)=>{
+      const d=document.createElement("div");
+      d.className="tb-dot"+(i===idx?" active":"");
+      d.onclick=()=>setIdx(i);
+      dots.appendChild(d);
+    });
+  },[idx,scale]);
+
+  const fw=SCREENS[0].ratio[0], fh=SCREENS[0].ratio[1];
+  const containerW = fw*scale, containerH = fh*scale;
+
+  return (
+    <div ref={canvasRef} id="canvas" style={{flex:1,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+      <div style={{position:"relative",width:containerW,height:containerH}}>
+        <div style={{position:"absolute",left:0,top:0,width:fw,height:fh,transformOrigin:"top left",transform:`scale(${scale})`,overflow:"hidden",borderRadius:2,boxShadow:"0 20px 60px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3)"}}>
+          <ScreenRenderer key={idx} screenIdx={idx}/>
+        </div>
+        <div style={{position:"absolute",bottom:-28,left:0,right:0,textAlign:"center",color:"#555",fontSize:11,fontWeight:500,pointerEvents:"none"}}>{SCREENS[idx].name}</div>
+      </div>
+    </div>
+  );
+}
+
+/* keyboard navigation */
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight"||e.key==="ArrowDown") navigate(1);
+  if(e.key==="ArrowLeft"||e.key==="ArrowUp") navigate(-1);
+});
+
+const root2 = ReactDOM.createRoot(document.getElementById("canvas"));
+root2.render(<ViewerWrapper/>);
+</script>
+</body>
+</html>
